@@ -46,7 +46,8 @@ return [
         ->get('/reviews/photo/{id:\d+}', 'community-reviews.photo', Http\PhotoController::class),
 
     (new Extend\Routes('api'))
-        ->get('/review-merchants/{id:\d+}', 'community-reviews.merchant', Http\MerchantSummaryController::class),
+        ->get('/review-merchants/{id:\d+}', 'community-reviews.merchant', Http\MerchantSummaryController::class)
+        ->get('/review-stats', 'community-reviews.stats', Http\StatsController::class),
 
     (new Extend\Filesystem())
         ->disk('ernestdefoe-community-reviews', fn (Paths $paths): array => [

@@ -59,7 +59,7 @@ class ForumFields
         }
         $out['max_photos'] = $this->config->maxPhotos();
         $out['imgur_client_id'] = $this->config->imgur() ? $this->config->string('imgur_client_id') : null;
-        $out['merchants'] = $this->config->merchantGroupId() !== null;
+        $out['merchant_group'] = $this->config->merchantGroupId();
 
         return $out;
     }

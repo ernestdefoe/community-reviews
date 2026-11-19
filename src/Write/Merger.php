@@ -35,7 +35,7 @@ class Merger
             Review::query()->where('item_id', $source->id)->update(['item_id' => $target->id]);
             Comment::query()->where('item_id', $source->id)->update(['item_id' => $target->id]);
             Item::query()->whereKey($target->id)->increment('view_count', $source->view_count);
-            Report::query()->where('subject_type', 'item')->where('subject_id', $source->id)->delete();
+            Report::query()->where('kind', 'item')->where('target_id', $source->id)->delete();
             $source->delete();
         });
 

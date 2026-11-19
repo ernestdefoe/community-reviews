@@ -145,6 +145,7 @@ class ItemResource extends AbstractDatabaseResource
             Schema\Number::make('rating')->nullable(),
             Schema\Number::make('rank')->property('rating_rank')->nullable(),
             Schema\Arr::make('criteriaAverages')->property('criteria_avg')->nullable(),
+            Schema\Arr::make('distribution')->nullable(),
             Schema\Arr::make('topMentions')->property('top_mentions')->nullable()->visible(fn (): bool => $this->config->extra('pros_cons')),
             Schema\Str::make('thumbnailUrl')->nullable()->get(fn (Item $item): ?string => $item->thumbnail ? $this->urls->thumb($item->thumbnail) : null),
             Schema\Str::make('photoUrl')->nullable()->get(fn (Item $item): ?string => $item->thumbnail ? $this->urls->full($item->thumbnail) : null),

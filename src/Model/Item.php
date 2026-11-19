@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property float|null $rating
  * @property float|null $rating_rank
  * @property array<string, float>|null $criteria_avg
+ * @property list<int>|null $distribution
  * @property array<string, mixed>|null $top_mentions
  * @property int|null $thumbnail_photo_id
  * @property CarbonInterface|null $last_activity_at
@@ -60,6 +61,7 @@ class Item extends AbstractModel
         'rating' => 'float',
         'rating_rank' => 'float',
         'criteria_avg' => 'array',
+        'distribution' => 'array',
         'top_mentions' => 'array',
         'thumbnail_photo_id' => 'integer',
         'last_activity_at' => 'datetime',

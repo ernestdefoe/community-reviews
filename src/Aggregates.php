@@ -46,6 +46,7 @@ class Aggregates
         $item->comment_count = (int) $this->db->table('community_review_comments')->where('item_id', $itemId)->count();
         $item->rating = $rating;
         $item->criteria_avg = $criteria;
+        $item->distribution = $this->distribution($itemId);
         $item->thumbnail_photo_id = $this->thumbnail($itemId);
         $item->last_activity_at = $this->lastActivity($itemId, $item);
         $item->top_mentions = $this->config->extra('pros_cons') ? $this->mentions($itemId) : null;
@@ -89,6 +90,20 @@ class Aggregates
         }
 
         return [$rating, $criteria === [] ? null : $criteria];
+    }
+
+    /** @return list<int> approved reviews per star, 1 to 5 (a review's rating rounded) */
+    private function distribution(int $itemId): array
+    {
+        $counts = [0, 0, 0, 0, 0];
+        $rows = $this->db->table('community_reviews')->where('item_id', $itemId)->where('status', 'approved')
+            ->groupBy('rating')->selectRaw($this->db->getQueryGrammar()->wrap('rating').' AS rating, COUNT(*) AS n')->get();
+        foreach ($rows as $row) {
+            $star = max(1, min(5, (int) round((float) $row->rating)));
+            $counts[$star - 1] += (int) $row->n;
+        }
+
+        return $counts;
     }
 
     /** MyBB shows a product with its reviews' first photos: the first photo of the oldest approved review that has one. */

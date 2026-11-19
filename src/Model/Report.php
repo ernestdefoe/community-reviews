@@ -13,8 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * A member's report of an item, review or comment (MyBB "Report"), for the moderators' queue.
  *
  * @property int $id
- * @property string $subject_type item|review|comment
- * @property int $subject_id
+ * @property string $kind item|review|comment
+ * @property int $target_id
  * @property int|null $item_id
  * @property string|null $excerpt
  * @property int $user_id
@@ -34,7 +34,7 @@ class Report extends AbstractModel
     public $timestamps = false;
 
     protected $casts = [
-        'subject_id' => 'integer',
+        'target_id' => 'integer',
         'item_id' => 'integer',
         'user_id' => 'integer',
         'resolved_by' => 'integer',

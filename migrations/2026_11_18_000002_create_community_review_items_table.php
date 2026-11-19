@@ -23,13 +23,15 @@ return Migration::createTable('community_review_items', function (Blueprint $tab
     // Bayesian average, only for ranking ("Top rated"), so one 5-star review never tops the list.
     $table->decimal('rating_rank', 5, 3)->nullable();
     $table->text('criteria_avg')->nullable();
+    // How many approved reviews round to 1..5 stars: the item page's distribution bars.
+    $table->string('distribution', 100)->nullable();
     $table->text('top_mentions')->nullable();
     $table->unsignedInteger('thumbnail_photo_id')->nullable();
     $table->dateTime('last_activity_at')->nullable();
     $table->dateTime('created_at')->nullable();
     $table->dateTime('updated_at')->nullable();
 
-    $table->index(['category_id', 'status', 'rating_rank']);
+    $table->index(['category_id', 'rating_rank']);
     $table->index(['status', 'created_at']);
     $table->index(['status', 'last_activity_at']);
     $table->index('slug');

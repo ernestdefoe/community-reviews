@@ -83,8 +83,8 @@ class ReportResource extends AbstractDatabaseResource
     public function fields(): array
     {
         return [
-            Schema\Str::make('subjectType')->property('subject_type')->requiredOnCreate()->writableOnCreate()->in(Report::SUBJECTS),
-            Schema\Integer::make('subjectId')->property('subject_id')->requiredOnCreate()->writableOnCreate(),
+            Schema\Str::make('subjectType')->property('kind')->requiredOnCreate()->writableOnCreate()->in(Report::SUBJECTS),
+            Schema\Integer::make('subjectId')->property('target_id')->requiredOnCreate()->writableOnCreate(),
             Schema\Str::make('reason')->nullable()->writableOnCreate()->maxLength(500),
             Schema\Str::make('excerpt')->nullable(),
             Schema\DateTime::make('createdAt')->property('created_at'),
@@ -109,10 +109,10 @@ class ReportResource extends AbstractDatabaseResource
     public function creating(object $model, BaseContext $context): ?object
     {
         $actor = $context->getActor();
-        $subject = match ($model->subject_type) {
-            'item' => Item::whereVisibleTo($actor)->find($model->subject_id),
-            'review' => Review::whereVisibleTo($actor)->find($model->subject_id),
-            default => Comment::whereVisibleTo($actor)->find($model->subject_id),
+        $subject = match ($model->kind) {
+            'item' => Item::whereVisibleTo($actor)->find($model->target_id),
+            'review' => Review::whereVisibleTo($actor)->find($model->target_id),
+            default => Comment::whereVisibleTo($actor)->find($model->target_id),
         };
         // Something gone or out of sight answers like something that never existed (no probing).
         if ($subject === null) {
