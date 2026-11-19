@@ -68,9 +68,11 @@ class VisibilityTest extends ReviewsTestCase
     #[Test]
     public function catalog_statistics_count_only_approved_items(): void
     {
-        $this->itemId(2);
+        $id = $this->itemId(2);
         $stats = $this->json($this->get('/api/review-items/stats'))['data']['attributes'];
         $this->assertSame(['items' => 1, 'reviews' => 1, 'comments' => 0, 'views' => 0], $stats);
-        $this->assertSame(200, $this->get('/api/review-items/1')->getStatusCode());
+        // The stats route sits before Show's /{id}: the item itself still resolves (never assume an id: MySQL and
+        // PostgreSQL sequences keep counting across tests).
+        $this->assertSame(200, $this->get("/api/review-items/$id")->getStatusCode());
     }
 }
