@@ -75,8 +75,11 @@ anonymised or deleted with them.
 
 ## Links
 
-- [Support forum](https://ernestdefoe.online)
+- [Support thread](https://ernestdefoe.online/d/279-community-reviews)
+- [Discuss](https://discuss.flarum.org/d/40442-community-reviews-product-reviews-your-members-write)
 - [Packagist](https://packagist.org/packages/ernestdefoe/community-reviews)
+- [Download page](https://ernestdefoe.online/downloads/f/community-reviews)
+- [Knowledge base](https://ernestdefoe.online/kb/ext-community-reviews)
 - [Try it on the showcase](https://ernestdefoe.dev/reviews)
 
 MIT licensed. ☕ If you like the things I have built, consider [buying me a coffee](https://buymeacoffee.com/ernestdefoe).
