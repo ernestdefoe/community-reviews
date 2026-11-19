@@ -1,0 +1,32 @@
+ernestdefoe-community-reviews:
+  api:
+    already_reported: You have already reported this.
+    already_reviewed: You have already reviewed this item. Edit your review instead.
+    body_too_long: "Keep it to {max} characters or fewer."
+    category_missing: Pick a category.
+    comment_empty: Write something first.
+    comment_missing: "Add a comment for {criterion}."
+    comment_too_long: "The comment for {criterion} can be {max} characters at most."
+    comment_too_long_plain: "Comments can be {max} characters at most."
+    first_review_missing: An item is added together with its first review.
+    item_missing: That item doesn't exist.
+    merchant_invalid: Pick a member of the Merchants group, or leave it empty.
+    merge_same: Pick a different item to merge into.
+    merge_target_missing: That item doesn't exist.
+    name_missing: Give the item a name.
+    name_taken: That item is already in the catalog.
+    name_too_long: "Item names can be {max} characters at most."
+    no_criteria: This category has no criteria to rate yet. Ask an admin to add some.
+    photo_bad_link: That isn't an imgur image link.
+    photo_bad_type: Photos must be JPEG, PNG, WebP or GIF images.
+    photo_in_use: That photo belongs to a review.
+    photo_invalid: One of the photos can't be used. Upload it again.
+    photo_required: Add at least one photo.
+    photo_too_large: "Photos can be {max} MB at most."
+    photo_too_many_pixels: "That photo is too large. Keep it under {max} megapixels."
+    photos_off: Photos are turned off.
+    score_missing: "Give {criterion} 1 to 5 stars."
+    title_too_long: "Titles can be {max} characters at most."
+    too_many_photos: "A review can have {max} photos at most."
+    upload_failed: The upload didn't arrive. Try again.
+    url_invalid: The entered URL is invalid.
