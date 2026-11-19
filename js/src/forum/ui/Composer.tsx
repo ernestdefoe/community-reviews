@@ -485,7 +485,7 @@ export default class Composer extends FormModal<ComposerAttrs> {
       photos: this.photos.map((p) => p.id),
     };
     if (setting('ask_price_link')) Object.assign(attrs, { price: this.price, url: this.url });
-    if (setting('merchant_group')) attrs.merchant = this.merchant.trim().replace(/^@/, '');
+    if (setting('merchant_group')) attrs.merchantName = this.merchant.trim().replace(/^@/, '');
     if (setting('extra_verified')) attrs.ownedFor = this.ownedFor;
     if (setting('extra_pros_cons')) Object.assign(attrs, { pros: list(this.pros), cons: list(this.cons) });
     return attrs;

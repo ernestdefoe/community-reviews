@@ -373,7 +373,7 @@ ernestdefoe-community-reviews:
       kind_item: Product
       kind_review: Review
       kind_comment: Comment
-      by: "Reported by {user}"
+      by: "Reported by {name}"
       resolve: Resolve
     profile:
       tab_written: Written

@@ -233,11 +233,12 @@ class ReviewWriter
     /** @param array<string, mixed> $input */
     private function extras(Review $review, array $input, User $actor): void
     {
-        if (array_key_exists('merchant', $input)) {
-            $name = Clean::text($input['merchant']);
+        // "merchantName", not "merchant": that name belongs to the review's merchant relationship.
+        if (array_key_exists('merchantName', $input)) {
+            $name = Clean::text($input['merchantName']);
             $merchant = $name === null ? null : $this->merchants->find($name);
             if ($name !== null && $merchant === null) {
-                $this->fail->on('merchant', 'merchant_invalid');
+                $this->fail->on('merchantName', 'merchant_invalid');
             }
             $review->merchant_id = $merchant?->id;
         }

@@ -17,7 +17,7 @@ class NotificationsAndHeadTest extends ReviewsTestCase
     #[Test]
     public function mybb_alerts_reach_the_merchant_and_earlier_posters(): void
     {
-        $item = $this->itemId(2, ['review' => $this->review(['merchant' => 'merchant'])]);
+        $item = $this->itemId(2, ['review' => $this->review(['merchantName' => 'merchant'])]);
         $this->assertSame([5], $this->notifications('communityReviewsMerchantTagged'));
 
         // Member 3 reviews: the earlier reviewer (2) hears about it, not the author.

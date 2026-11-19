@@ -33,7 +33,7 @@ use Tobyz\JsonApiServer\Pagination\Pagination;
  * GET    /api/reviews   filters: item, user (written by), merchant (tagged as merchant), status=pending (moderators),
  *                       photos=1; sort: createdAt (default: the admin's display order), helpful.
  * GET    /api/reviews/{id}
- * POST   /api/reviews   {scores: [{criterionId, score, comment}], title?, body?, price?, url?, merchant?, photos?: [ids],
+ * POST   /api/reviews   {scores: [{criterionId, score, comment}], title?, body?, price?, url?, merchantName?, photos?: [ids],
  *                       ownedFor?, pros?, cons?, relationships.item}
  * PATCH  /api/reviews/{id}   the same attributes; moderators also status, isVerified
  * DELETE /api/reviews/{id}
@@ -46,7 +46,7 @@ class ReviewResource extends AbstractDatabaseResource
 {
     use Concerns\ReadsInput;
 
-    private const INPUTS = ['scores', 'title', 'body', 'price', 'url', 'merchant', 'photos', 'ownedFor', 'pros', 'cons', 'status', 'isVerified'];
+    private const INPUTS = ['scores', 'title', 'body', 'price', 'url', 'merchantName', 'photos', 'ownedFor', 'pros', 'cons', 'status', 'isVerified'];
 
     /** @var array<int, int|null> the merchant before an edit, per review object id */
     private array $previousMerchant = [];
@@ -122,7 +122,8 @@ class ReviewResource extends AbstractDatabaseResource
             Schema\Str::make('bodyHtml')->nullable()->get(fn (Review $r, Context $context): ?string => $r->bodyHtml($context->request)),
             $input(Schema\Str::make('price')->nullable()),
             $input(Schema\Str::make('url')->nullable()),
-            $input(Schema\Str::make('merchant')->nullable()->visible(false)),
+            // The merchant's username, written by the composer; read back through the `merchant` relationship.
+            $input(Schema\Str::make('merchantName')->nullable()->visible(false)),
             $input(Schema\Arr::make('photos')->get(fn (Review $r): array => $r->photos->map(fn (Photo $p) => $this->urls->of($p))->values()->all())),
             $input(Schema\Str::make('ownedFor')->property('owned_for')->nullable()->visible(fn (): bool => $this->config->extra('verified'))),
             $input(Schema\Arr::make('pros')->nullable()->visible(fn (): bool => $this->config->extra('pros_cons'))),

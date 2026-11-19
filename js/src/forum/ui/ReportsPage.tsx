@@ -114,7 +114,7 @@ export default class ReportsPage extends Page {
           </div>
           {report.excerpt() ? <p className="CR-reportrow-excerpt">“{report.excerpt()}”</p> : null}
           <div className="CR-muted">
-            {t('reports.by', { user: username(report.user() || null) })} · {humanTime(report.createdAt())}
+            {t('reports.by', { name: username(report.user() || null) })} · {humanTime(report.createdAt())}
             {report.reason() ? ` · ${report.reason()}` : ''}
           </div>
         </div>
