@@ -15,6 +15,7 @@ use Flarum\Api\Endpoint;
 use Flarum\Api\Resource\AbstractDatabaseResource;
 use Flarum\Api\Schema;
 use Flarum\Api\Sort\SortColumn;
+use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -35,8 +36,10 @@ use Tobyz\JsonApiServer\Pagination\OffsetPagination;
  */
 class ReportResource extends AbstractDatabaseResource
 {
-    public function __construct(private readonly Fail $fail)
-    {
+    public function __construct(
+        private readonly Fail $fail,
+        private readonly ConnectionInterface $db,
+    ) {
     }
 
     public function type(): string
@@ -119,6 +122,9 @@ class ReportResource extends AbstractDatabaseResource
             throw new ModelNotFoundException();
         }
         $actor->assertCan('report', $subject);
+        if (Report::query()->where('kind', $model->kind)->where('target_id', $model->target_id)->where('user_id', $actor->id)->exists()) {
+            $this->fail->on('reason', 'already_reported');
+        }
 
         $model->item_id = $subject instanceof Item ? $subject->id : $subject->item_id;
         $model->excerpt = Str::limit(trim(strip_tags(match (true) {
@@ -132,11 +138,15 @@ class ReportResource extends AbstractDatabaseResource
         return $model;
     }
 
-    /** A second report of the same thing by the same member: one translated answer, whichever got there first. */
+    /**
+     * A second report racing the first hits the unique key: the same translated answer as the check above. The save
+     * runs in its own transaction (a savepoint inside the request's), because PostgreSQL aborts the whole outer
+     * transaction on a caught constraint violation.
+     */
     protected function saveModel(Model $model, BaseContext $context): void
     {
         try {
-            parent::saveModel($model, $context);
+            $this->db->transaction(fn () => parent::saveModel($model, $context));
         } catch (UniqueConstraintViolationException) {
             $this->fail->on('reason', 'already_reported');
         }

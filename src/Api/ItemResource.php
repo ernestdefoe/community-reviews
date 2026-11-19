@@ -257,15 +257,23 @@ class ItemResource extends AbstractDatabaseResource
         return $context->withQuery($query);
     }
 
-    /** MyBB's FULLTEXT name search on MySQL and PostgreSQL; a name prefix match on SQLite (no FULLTEXT there). */
+    /**
+     * MyBB's FULLTEXT name search (MySQL and PostgreSQL), plus a name-prefix match that uses the plain name index:
+     * InnoDB adds rows to a FULLTEXT index only at commit and skips short words, so a product added a moment ago or
+     * called "XL" is still found by its first letters. SQLite has no FULLTEXT: the prefix match alone.
+     */
     private function search(Builder $query, string $q): void
     {
+        $prefix = addcslashes($q, '%_\\').'%';
+        // Case-insensitive everywhere: PostgreSQL's LIKE isn't, so it gets ILIKE.
+        $like = $this->db->getDriverName() === 'pgsql' ? 'ilike' : 'like';
         if ($this->db->getDriverName() === 'sqlite') {
-            $query->where('community_review_items.name', 'like', addcslashes($q, '%_\\').'%');
+            $query->where('community_review_items.name', $like, $prefix);
 
             return;
         }
-        $query->whereFullText('community_review_items.name', $q);
+        $query->where(fn (Builder $w) => $w->where('community_review_items.name', $like, $prefix)
+            ->orWhereFullText('community_review_items.name', $q));
     }
 
     /**
