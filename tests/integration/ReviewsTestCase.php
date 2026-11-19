@@ -46,6 +46,8 @@ abstract class ReviewsTestCase extends TestCase
             ],
         ]);
         $this->setting('ernestdefoe-community-reviews.merchant_group', 10);
+        // The flood guard has its own test; everywhere else it would only slow the suite.
+        $this->setting('ernestdefoe-community-reviews.flood_seconds', 0);
     }
 
     /** @return array<string, mixed> */

@@ -74,6 +74,9 @@ return [
     (new Extend\ServiceProvider())
         ->register(ServiceProvider::class),
 
+    (new Extend\ThrottleApi())
+        ->set('community-reviews', \ErnestDefoe\CommunityReviews\Throttle::class),
+
     (new Extend\Notification())
         ->type(\ErnestDefoe\CommunityReviews\Notification\MerchantTaggedBlueprint::class, ['alert'])
         ->type(\ErnestDefoe\CommunityReviews\Notification\NewReviewBlueprint::class, ['alert'])
@@ -124,6 +127,7 @@ return [
         ->default('ernestdefoe-community-reviews.review_approval', false)
         ->default('ernestdefoe-community-reviews.one_per_member', false)
         ->default('ernestdefoe-community-reviews.rank_min_reviews', 3)
+        ->default('ernestdefoe-community-reviews.flood_seconds', 10)
         ->default('ernestdefoe-community-reviews.index_widget', false)
         ->default('ernestdefoe-community-reviews.extra_helpful', false)
         ->default('ernestdefoe-community-reviews.extra_verified', false)

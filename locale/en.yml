@@ -88,6 +88,8 @@ ernestdefoe-community-reviews:
       rank_min_reviews_help: Top rated lists only products with at least this many reviews.
       name_max: Product name length limit
       card_name_max: Name length on product cards
+      flood_seconds: Seconds between a member's posts
+      flood_seconds_help: One product, review, comment or report per member in this time (0 turns it off). Moderators are exempt.
       item_approval: Hold new products for approval
       one_per_member: One review per member per product
       one_per_member_help: Off lets members review a product again, like MyBB.

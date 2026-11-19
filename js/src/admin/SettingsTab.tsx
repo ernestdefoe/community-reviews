@@ -36,7 +36,7 @@ const GROUPS: { id: string; fields: Field[] }[] = [
       num('rank_min_reviews'),
     ],
   },
-  { id: 'items', fields: [num('name_max'), num('card_name_max'), bool('item_approval'), bool('one_per_member')] },
+  { id: 'items', fields: [num('name_max'), num('card_name_max'), num('flood_seconds', 0), bool('item_approval'), bool('one_per_member')] },
   {
     id: 'writing',
     fields: [
