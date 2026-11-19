@@ -19,7 +19,7 @@ class ForumFields
     private const SETTINGS = [
         'int' => ['items_per_page', 'reviews_per_page', 'comments_per_page', 'recent_limit', 'widget_limit', 'name_max', 'card_name_max', 'general_max', 'comment_max', 'rank_min_reviews'],
         'bool' => ['criterion_comment_required', 'ask_price_link', 'require_photo', 'item_approval', 'review_approval', 'one_per_member',
-            'extra_helpful', 'extra_verified', 'extra_pros_cons', 'extra_compare', 'extra_rich_results'],
+            'index_widget', 'extra_helpful', 'extra_verified', 'extra_pros_cons', 'extra_rich_results'],
         'string' => ['item_order', 'item_order_dir', 'display_order', 'general_label'],
     ];
 

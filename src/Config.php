@@ -75,7 +75,7 @@ class Config
         return $this->string('photo_host') === 'imgur' && $this->string('imgur_client_id') !== '';
     }
 
-    /** An extra (helpful, verified, pros_cons, compare, rich_results, owned_for): all off by default, like MyBB. */
+    /** An extra (helpful, verified, pros_cons, rich_results): all off by default, like MyBB. */
     public function extra(string $name): bool
     {
         return $this->bool('extra_'.$name);

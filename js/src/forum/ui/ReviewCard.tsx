@@ -194,6 +194,18 @@ export default class ReviewCard extends Component<ReviewCardAttrs> {
         run: () => review.save({ status: 'approved' }).then(this.attrs.onchange).catch(failed),
       });
     }
+    if (review.canModerate() && setting('extra_verified')) {
+      const on = !!review.isVerified();
+      entries.push({
+        icon: on ? 'far fa-circle-xmark' : 'fas fa-circle-check',
+        label: t(on ? 'review.unmark_verified' : 'review.mark_verified'),
+        run: () =>
+          review
+            .save({ isVerified: !on })
+            .then(() => m.redraw())
+            .catch(failed),
+      });
+    }
     if (review.canDelete()) {
       entries.push({
         icon: 'far fa-trash-can',

@@ -4,5 +4,5 @@ import extenders from './extend';
 export { extenders as extend };
 
 app.initializers.add('ernestdefoe-community-reviews', () => {
-  /* the admin page arrives in milestone 3 */
+  /* everything is declared in ./extend */
 });

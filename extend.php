@@ -32,7 +32,7 @@ return [
         ->css(__DIR__.'/less/forum.less')
         ->route('/reviews', 'community-reviews.index')
         ->route('/reviews/c/{slug}', 'community-reviews.category')
-        ->route('/reviews/i/{id:\d+(?:-[^/]*)?}', 'community-reviews.item')
+        ->route('/reviews/i/{id:\d+(?:-[^/]*)?}', 'community-reviews.item', Http\ItemHead::class)
         ->route('/reviews/reports', 'community-reviews.reports')
         ->route('/u/{username}/reviews', 'user.community-reviews'),
 
@@ -78,6 +78,30 @@ return [
     (new Extend\ServiceProvider())
         ->register(ServiceProvider::class),
 
+    (new Extend\Notification())
+        ->type(\ErnestDefoe\CommunityReviews\Notification\MerchantTaggedBlueprint::class, ['alert'])
+        ->type(\ErnestDefoe\CommunityReviews\Notification\NewReviewBlueprint::class, ['alert'])
+        ->type(\ErnestDefoe\CommunityReviews\Notification\NewCommentBlueprint::class, ['alert']),
+
+    (new Extend\Event())
+        ->listen(\ErnestDefoe\CommunityReviews\Event\ReviewSaved::class, [\ErnestDefoe\CommunityReviews\Listener\QueueNotifications::class, 'review'])
+        ->listen(\ErnestDefoe\CommunityReviews\Event\CommentSaved::class, [\ErnestDefoe\CommunityReviews\Listener\QueueNotifications::class, 'comment'])
+        ->listen('eloquent.deleting: ErnestDefoe\\CommunityReviews\\Model\\Review', [\ErnestDefoe\CommunityReviews\Listener\DeletePhotos::class, 'review'])
+        ->listen('eloquent.deleting: ErnestDefoe\\CommunityReviews\\Model\\Item', [\ErnestDefoe\CommunityReviews\Listener\DeletePhotos::class, 'item'])
+        ->listen(\Flarum\User\Event\Deleting::class, [\ErnestDefoe\CommunityReviews\Listener\DeletePhotos::class, 'user']),
+
+    (new Extend\Console())
+        ->command(\ErnestDefoe\CommunityReviews\Console\PruneCommand::class)
+        ->schedule(\ErnestDefoe\CommunityReviews\Console\PruneCommand::class, function (\Illuminate\Console\Scheduling\Event $event): void {
+            $event->daily()->withoutOverlapping();
+        }),
+
+    // A member's reviews, comments and photos in their data export; anonymised or erased with them.
+    (new Extend\Conditional())
+        ->whenExtensionEnabled('flarum-gdpr', fn (): array => [
+            (new \Flarum\Gdpr\Extend\UserData())->addType(\ErnestDefoe\CommunityReviews\Gdpr\ReviewsData::class),
+        ]),
+
     // Out of the box this is MyBB's feature set: every extra is off.
     (new Extend\Settings())
         ->default('ernestdefoe-community-reviews.item_order', 'name')
@@ -104,9 +128,9 @@ return [
         ->default('ernestdefoe-community-reviews.review_approval', false)
         ->default('ernestdefoe-community-reviews.one_per_member', false)
         ->default('ernestdefoe-community-reviews.rank_min_reviews', 3)
+        ->default('ernestdefoe-community-reviews.index_widget', false)
         ->default('ernestdefoe-community-reviews.extra_helpful', false)
         ->default('ernestdefoe-community-reviews.extra_verified', false)
         ->default('ernestdefoe-community-reviews.extra_pros_cons', false)
-        ->default('ernestdefoe-community-reviews.extra_compare', false)
         ->default('ernestdefoe-community-reviews.extra_rich_results', false),
 ];

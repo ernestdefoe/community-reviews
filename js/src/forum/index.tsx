@@ -7,8 +7,9 @@ import type ItemList from 'flarum/common/utils/ItemList';
 import type UserPage from 'flarum/forum/components/UserPage';
 import type Mithril from 'mithril';
 import type Category from './models/Category';
-import extenders from './extend';
-import { t, ui } from './util';
+import extenders, { NOTIFICATIONS } from './extend';
+import LatestReviews from './LatestReviews';
+import { setting, t, ui } from './util';
 
 export { extenders as extend };
 
@@ -110,6 +111,19 @@ app.initializers.add('ernestdefoe-community-reviews', () => {
       );
     });
   });
+
+  // MyBB's index widget ({$community_reviews_widget} at index_end): the latest reviews under the discussion list, when the admin turns it on.
+  extend('flarum/forum/components/IndexPage', 'contentItems', function (items: ItemList<Mithril.Children>) {
+    if (setting('index_widget') && app.forum.attribute('communityReviewsCanView')) items.add('communityReviews', <LatestReviews />, -100);
+  });
+
+  extend(
+    'flarum/forum/components/NotificationGrid',
+    'notificationTypes',
+    function (items: ItemList<{ name: string; icon: string; label: Mithril.Children }>) {
+      Object.entries(NOTIFICATIONS).forEach(([name, icon]) => items.add(name, { name, icon, label: t(`notifications.${name}_preference`) }));
+    }
+  );
 
   extend('flarum/forum/components/UserPage', 'navItems', function (this: UserPage, items: ItemList<Mithril.Children>) {
     if (!this.user || !app.forum.attribute('communityReviewsCanView')) return;

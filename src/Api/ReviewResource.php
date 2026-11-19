@@ -72,7 +72,7 @@ class ReviewResource extends AbstractDatabaseResource
     {
         $actor = $context->getActor();
         $query->whereVisibleTo($actor)->select('community_reviews.*')
-            ->with(['user.groups', 'merchant', 'scores.criterion', 'photos']);
+            ->with(['user.groups', 'merchant', 'scores.criterion', 'photos', 'item']);
 
         if (! $actor->isGuest() && $this->config->extra('helpful')) {
             $query->addSelect(['voted' => fn (QueryBuilder $q) => $q->selectRaw('1')->from('community_review_votes')
@@ -121,6 +121,10 @@ class ReviewResource extends AbstractDatabaseResource
             $input(Schema\Boolean::make('isVerified')->property('is_verified')->visible(fn (): bool => $this->config->extra('verified'))),
             $input(Schema\Str::make('status')->visible(fn (Review $r, Context $context): bool => $r->status !== Review::APPROVED || $context->getActor()->can('moderate', $r))),
 
+            // For notifications and lists that show the review away from its item page: the item's link and name,
+            // from the eager-loaded item (the review being visible means its item is).
+            Schema\Str::make('itemPath')->nullable()->get(fn (Review $r): ?string => $r->item ? $r->item->id.'-'.$r->item->slug : null),
+            Schema\Str::make('itemName')->nullable()->get(fn (Review $r): ?string => $r->item?->name),
             Schema\Number::make('rating'),
             Schema\Number::make('previousRating')->property('previous_rating')->nullable(),
             Schema\Integer::make('helpfulCount')->property('helpful_count')->visible(fn (): bool => $this->config->extra('helpful')),

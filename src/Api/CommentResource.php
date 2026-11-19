@@ -52,7 +52,7 @@ class CommentResource extends AbstractDatabaseResource
     /** @param Builder<Comment> $query */
     public function scope(Builder $query, BaseContext $context): void
     {
-        $query->whereVisibleTo($context->getActor())->select('community_review_comments.*')->with(['user.groups', 'review.user']);
+        $query->whereVisibleTo($context->getActor())->select('community_review_comments.*')->with(['user.groups', 'review.user', 'item']);
     }
 
     public function endpoints(): array
@@ -82,6 +82,8 @@ class CommentResource extends AbstractDatabaseResource
             Schema\Str::make('bodyHtml')->get(fn (Comment $c, Context $context): string => $c->bodyHtml($context->request)),
             // "in reply to Jordan's review": the review's author name, from the eager-loaded review.
             Schema\Str::make('replyToName')->nullable()->get(fn (Comment $c): ?string => $c->review?->user?->display_name),
+            Schema\Str::make('itemPath')->nullable()->get(fn (Comment $c): ?string => $c->item ? $c->item->id.'-'.$c->item->slug : null),
+            Schema\Str::make('itemName')->nullable()->get(fn (Comment $c): ?string => $c->item?->name),
             Schema\DateTime::make('createdAt')->property('created_at'),
             Schema\DateTime::make('editedAt')->property('edited_at')->nullable(),
             Schema\Boolean::make('canEdit')->get($can('edit')),

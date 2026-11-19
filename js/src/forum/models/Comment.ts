@@ -9,6 +9,8 @@ export default class Comment extends Model {
   reviewId = Model.attribute<number | null>('reviewId');
   replyToName = Model.attribute<string | null>('replyToName');
   isOfficial = Model.attribute<boolean>('isOfficial');
+  itemPath = Model.attribute<string | null>('itemPath');
+  itemName = Model.attribute<string | null>('itemName');
   createdAt = Model.attribute<Date, string>('createdAt', Model.transformDate);
   editedAt = Model.attribute<Date | null, string | null>('editedAt', Model.transformDate);
   canEdit = Model.attribute<boolean>('canEdit');

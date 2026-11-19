@@ -36,6 +36,8 @@ export default class Review extends Model {
   helpfulCount = Model.attribute<number | undefined>('helpfulCount');
   votedHelpful = Model.attribute<boolean | undefined>('votedHelpful');
   commentCount = Model.attribute<number>('commentCount');
+  itemPath = Model.attribute<string | null>('itemPath');
+  itemName = Model.attribute<string | null>('itemName');
   createdAt = Model.attribute<Date, string>('createdAt', Model.transformDate);
   editedAt = Model.attribute<Date | null, string | null>('editedAt', Model.transformDate);
 
