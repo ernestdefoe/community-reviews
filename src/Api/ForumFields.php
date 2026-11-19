@@ -58,6 +58,8 @@ class ForumFields
             }
         }
         $out['max_photos'] = $this->config->maxPhotos();
+        // A Client ID is imgur's public identifier for anonymous browser uploads (MyBB puts it in the page too);
+        // sent only while the admin has picked imgur.
         $out['imgur_client_id'] = $this->config->imgur() ? $this->config->string('imgur_client_id') : null;
         $out['merchant_group'] = $this->config->merchantGroupId();
 

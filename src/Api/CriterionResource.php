@@ -30,6 +30,8 @@ use Tobyz\JsonApiServer\Context as BaseContext;
  */
 class CriterionResource extends AbstractDatabaseResource
 {
+    use Concerns\Reorders;
+
     public function __construct(
         private readonly ConnectionInterface $db,
         private readonly TranslatorInterface $translator,
@@ -50,6 +52,7 @@ class CriterionResource extends AbstractDatabaseResource
     public function scope(Builder $query, BaseContext $context): void
     {
         if (! $context->getActor()->hasPermission('communityReviews.view') && ! $context->getActor()->isAdmin()) {
+            // Without the view permission the categories' criteria are hidden too.
             $query->whereRaw('1 = 0');
         }
     }
@@ -70,7 +73,7 @@ class CriterionResource extends AbstractDatabaseResource
                 ->route('POST', '/order')
                 ->authenticated()
                 ->admin()
-                ->action(fn (Context $context) => $this->reorder(Clean::ids($context->body()['order'] ?? [])))
+                ->action(fn (Context $context) => $this->reorder(Criterion::query(), $this->db, Clean::ids($context->body()['order'] ?? [])))
                 ->response(fn () => new EmptyResponse(204)),
         ];
     }
@@ -111,20 +114,5 @@ class CriterionResource extends AbstractDatabaseResource
         $copy->save();
 
         return $copy;
-    }
-
-    /** @param list<int> $ids integers (Clean::ids), so inlining them in the CASE is safe */
-    private function reorder(array $ids): void
-    {
-        if ($ids === []) {
-            return;
-        }
-        $cases = '';
-        foreach ($ids as $position => $id) {
-            $cases .= ' WHEN '.(int) $id.' THEN '.(int) $position;
-        }
-        Criterion::query()->whereIn('id', $ids)->update([
-            'position' => $this->db->raw('CASE '.$this->db->getQueryGrammar()->wrap('id').$cases.' END'),
-        ]);
     }
 }

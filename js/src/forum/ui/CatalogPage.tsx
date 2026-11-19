@@ -70,7 +70,7 @@ export default class CatalogPage extends Page {
 
   private loadHome(): void {
     app
-      .request<{ data: { attributes: Stats } }>({ method: 'GET', url: `${app.forum.attribute('apiUrl')}/review-stats` })
+      .request<{ data: { attributes: Stats } }>({ method: 'GET', url: `${app.forum.attribute('apiUrl')}/review-items/stats` })
       .then((r) => (this.stats = r.data.attributes))
       .catch(() => (this.stats = null))
       .finally(() => m.redraw());
@@ -95,7 +95,7 @@ export default class CatalogPage extends Page {
   private load(offset = 0): void {
     this.loading = true;
     const home = !this.category && !this.searched;
-    const limit = home ? Number(setting('recent_limit')) || 12 : Number(setting('items_per_page')) || 12;
+    const limit = home ? Number(setting('recent_limit')) : Number(setting('items_per_page'));
     const filter: Record<string, string> = {};
     if (this.category) filter.category = this.category.id()!;
     if (this.searched) filter.q = this.searched;
@@ -117,7 +117,7 @@ export default class CatalogPage extends Page {
   }
 
   private loadReviews(offset: number): void {
-    const limit = Number(setting('recent_limit')) || 12;
+    const limit = Number(setting('recent_limit'));
     app.store
       .find<Review[]>('reviews', { include: 'user,item,item.category', page: { offset, limit, total: 0 } })
       .then((reviews) => {

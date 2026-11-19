@@ -9,6 +9,7 @@ use ErnestDefoe\CommunityReviews\Model\Category;
 use ErnestDefoe\CommunityReviews\Model\Item;
 use ErnestDefoe\CommunityReviews\Model\Review;
 use ErnestDefoe\CommunityReviews\Photo\Urls;
+use ErnestDefoe\CommunityReviews\Stats;
 use ErnestDefoe\CommunityReviews\Views;
 use ErnestDefoe\CommunityReviews\Write\Fail;
 use ErnestDefoe\CommunityReviews\Write\ItemWriter;
@@ -24,6 +25,7 @@ use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Laminas\Diactoros\Response\EmptyResponse;
+use Laminas\Diactoros\Response\JsonResponse;
 use Tobyz\JsonApiServer\Context as BaseContext;
 use Tobyz\JsonApiServer\Pagination\OffsetPagination;
 use Tobyz\JsonApiServer\Pagination\Pagination;
@@ -44,6 +46,8 @@ use Tobyz\JsonApiServer\Pagination\Pagination;
  */
 class ItemResource extends AbstractDatabaseResource
 {
+    use Concerns\ReadsInput;
+
     private const SORTS = [
         'name' => 'name',
         'rating' => 'rating',
@@ -66,6 +70,7 @@ class ItemResource extends AbstractDatabaseResource
         private readonly ReviewWriter $reviews,
         private readonly Merger $merger,
         private readonly Views $views,
+        private readonly Stats $stats,
         private readonly Urls $urls,
         private readonly Fail $fail,
         private readonly ConnectionInterface $db,
@@ -95,6 +100,12 @@ class ItemResource extends AbstractDatabaseResource
                 ->defaultInclude(['category'])
                 ->paginate(12, 50)
                 ->query(fn (Builder $query, ?Pagination $pagination, Context $context, array $filters, ?array $sort) => $this->listing($query, $pagination, $context, $filters, $sort)),
+            // MyBB's Statistics block: catalog totals over approved items, cached (Stats). GET /api/review-items/stats
+            Endpoint\Endpoint::make('stats')
+                ->route('GET', '/stats')
+                ->can('communityReviews.view')
+                ->action(fn (): array => $this->stats->get())
+                ->response(fn (Context $context, array $stats) => new JsonResponse(['data' => ['type' => 'review-stats', 'id' => '1', 'attributes' => $stats]])),
             Endpoint\Show::make()->defaultInclude(['category', 'category.criteria', 'user']),
             Endpoint\Create::make()->authenticated()->can('communityReviews.addItems')->defaultInclude(['category']),
             Endpoint\Update::make()->authenticated()->can('edit')->defaultInclude(['category']),
@@ -295,20 +306,5 @@ class ItemResource extends AbstractDatabaseResource
             $query->orderBy($column, $direction === 'desc' ? 'desc' : 'asc');
         }
         $query->orderBy('community_review_items.id', 'desc');
-    }
-
-    /** @return array<string, mixed> */
-    private function attributes(Context $context): array
-    {
-        $attributes = $context->body()['data']['attributes'] ?? [];
-
-        return is_array($attributes) ? $attributes : [];
-    }
-
-    private function ip(Context $context): ?string
-    {
-        $ip = RequestUtil::getActor($context->request)->isGuest() ? null : $context->request->getAttribute('ipAddress');
-
-        return is_string($ip) ? $ip : null;
     }
 }

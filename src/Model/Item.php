@@ -9,7 +9,6 @@ use Flarum\Database\AbstractModel;
 use Flarum\Database\ScopeVisibilityTrait;
 use Flarum\User\User;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * A reviewed product (MyBB "product"). Its counts, averages and thumbnail are kept on the row by
@@ -85,18 +84,6 @@ class Item extends AbstractModel
     public function thumbnail(): BelongsTo
     {
         return $this->belongsTo(Photo::class, 'thumbnail_photo_id');
-    }
-
-    /** @return HasMany<Review, $this> */
-    public function reviews(): HasMany
-    {
-        return $this->hasMany(Review::class, 'item_id');
-    }
-
-    /** @return HasMany<Comment, $this> */
-    public function comments(): HasMany
-    {
-        return $this->hasMany(Comment::class, 'item_id');
     }
 
     public function isApproved(): bool

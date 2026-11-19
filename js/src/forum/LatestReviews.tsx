@@ -14,7 +14,7 @@ export default class LatestReviews extends Component {
   oninit(vnode: Mithril.Vnode) {
     super.oninit(vnode);
     app.store
-      .find<Review[]>('reviews', { include: 'user', page: { limit: Number(setting('widget_limit')) || 6, total: 0 } })
+      .find<Review[]>('reviews', { include: 'user', page: { limit: Number(setting('widget_limit')), total: 0 } })
       .then((list) => (this.reviews = [...list]))
       .catch(() => {
         /* the widget simply stays empty; the discussion list above it is what the page is for */

@@ -53,10 +53,4 @@ class Category extends AbstractModel
     {
         return $this->hasMany(Criterion::class, 'category_id')->orderBy('position')->orderBy('id');
     }
-
-    /** @return HasMany<Item, $this> */
-    public function items(): HasMany
-    {
-        return $this->hasMany(Item::class, 'category_id');
-    }
 }

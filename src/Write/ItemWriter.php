@@ -89,6 +89,7 @@ class ItemWriter
         }
 
         // MyBB: "The specified product already exists." Same name, any case, anywhere in the catalog.
+        // LOWER() on both sides: case-insensitive on every driver (PostgreSQL compares case-sensitively).
         $taken = Item::query()
             ->whereRaw('LOWER('.$this->db->getQueryGrammar()->wrap('community_review_items.name').') = ?', [mb_strtolower($name)])
             ->when($item->exists, fn ($q) => $q->whereKeyNot($item->id))

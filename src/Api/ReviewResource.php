@@ -22,6 +22,7 @@ use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use Laminas\Diactoros\Response\JsonResponse;
 use Tobyz\JsonApiServer\Context as BaseContext;
 use Tobyz\JsonApiServer\Pagination\OffsetPagination;
 use Tobyz\JsonApiServer\Pagination\Pagination;
@@ -37,12 +38,14 @@ use Tobyz\JsonApiServer\Pagination\Pagination;
  * PATCH  /api/reviews/{id}   the same attributes; moderators also status, isVerified
  * DELETE /api/reviews/{id}
  * POST   /api/reviews/{id}/helpful  {"helpful": true|false}  (extra, off by default)
- * A merchant's average lives at GET /api/review-merchants/{id} (Http\MerchantSummaryController).
+ * GET    /api/reviews/merchant-summary?filter[merchant]=N   a merchant's average and count
  *
  * @extends AbstractDatabaseResource<Review>
  */
 class ReviewResource extends AbstractDatabaseResource
 {
+    use Concerns\ReadsInput;
+
     private const INPUTS = ['scores', 'title', 'body', 'price', 'url', 'merchant', 'photos', 'ownedFor', 'pros', 'cons', 'status', 'isVerified'];
 
     /** @var array<int, int|null> the merchant before an edit, per review object id */
@@ -88,10 +91,16 @@ class ReviewResource extends AbstractDatabaseResource
                 ->defaultInclude(['user', 'merchant'])
                 ->paginate(6, 50)
                 ->query(fn (Builder $query, ?Pagination $pagination, Context $context, array $filters, ?array $sort) => $this->listing($query, $pagination, $context, $filters, $sort)),
+            // counts): GET /api/reviews/merchant-summary?filter[merchant]=N. Two aggregates.
+            Endpoint\Endpoint::make('merchantSummary')
+                ->route('GET', '/merchant-summary')
+                ->action(fn (Context $context): array => $this->merchantSummary($context))
+                ->response(fn (Context $context, array $summary) => new JsonResponse(['data' => ['type' => 'review-merchants', 'id' => (string) $summary['user'], 'attributes' => $summary]])),
             Endpoint\Show::make()->defaultInclude(['user', 'merchant', 'item']),
             Endpoint\Create::make()->authenticated()->can('communityReviews.write')->defaultInclude(['user', 'merchant', 'item']),
             Endpoint\Update::make()->authenticated()->can('edit')->defaultInclude(['user', 'merchant']),
             Endpoint\Delete::make()->authenticated()->can('delete'),
+            // A merchant's average and count, over the reviews the viewer can see (a held or gated review never
             Endpoint\Endpoint::make('helpful')
                 ->route('POST', '/{id}/helpful')
                 ->authenticated()
@@ -158,7 +167,7 @@ class ReviewResource extends AbstractDatabaseResource
         if ($item === null) {
             $this->fail->on('item', 'item_missing');
         }
-        $this->writer->prepare($model, $item, $context->getActor(), $this->attributes($context), $this->ip($context));
+        $this->writer->prepare($model, $item, $context->getActor(), array_intersect_key($this->attributes($context), array_flip(self::INPUTS)), $this->ip($context));
 
         return $model;
     }
@@ -169,7 +178,7 @@ class ReviewResource extends AbstractDatabaseResource
         /** @var Review $model */
         $this->previousMerchant[spl_object_id($model)] = $model->getOriginal('merchant_id');
         $item = Item::query()->findOrFail($model->item_id);
-        $this->writer->prepare($model, $item, $context->getActor(), $this->attributes($context), null);
+        $this->writer->prepare($model, $item, $context->getActor(), array_intersect_key($this->attributes($context), array_flip(self::INPUTS)), null);
 
         return $model;
     }
@@ -252,6 +261,17 @@ class ReviewResource extends AbstractDatabaseResource
         return $context->withQuery($query);
     }
 
+    /** @return array{user: int, reviewCount: int, rating: float|null} */
+    private function merchantSummary(Context $context): array
+    {
+        $filter = $context->request->getQueryParams()['filter'] ?? [];
+        $user = (int) (is_array($filter) ? ($filter['merchant'] ?? 0) : 0);
+        $query = Review::whereVisibleTo($context->getActor())->where('community_reviews.merchant_id', $user)->where('community_reviews.status', Review::APPROVED);
+        $count = (clone $query)->count();
+
+        return ['user' => $user, 'reviewCount' => $count, 'rating' => $count > 0 ? round((float) $query->avg('community_reviews.rating'), 2) : null];
+    }
+
     private function vote(Context $context): ?Review
     {
         /** @var Review $review */
@@ -272,20 +292,5 @@ class ReviewResource extends AbstractDatabaseResource
         $fresh = $this->find((string) $review->id, $context);
 
         return $fresh instanceof Review ? $fresh : null;
-    }
-
-    /** @return array<string, mixed> only the attributes a review writer reads */
-    private function attributes(Context $context): array
-    {
-        $attributes = $context->body()['data']['attributes'] ?? [];
-
-        return is_array($attributes) ? array_intersect_key($attributes, array_flip(self::INPUTS)) : [];
-    }
-
-    private function ip(Context $context): ?string
-    {
-        $ip = $context->request->getAttribute('ipAddress');
-
-        return is_string($ip) ? $ip : null;
     }
 }

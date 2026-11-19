@@ -25,45 +25,15 @@ export interface ReviewCardAttrs extends ComponentAttrs {
 export default class ReviewCard extends Component<ReviewCardAttrs> {
   view() {
     const { review } = this.attrs;
-    const user = review.user();
     return (
       <article className="CR-review" id={`review${review.id()}`}>
-        <header className="CR-review-head">
-          <Avatar user={user || null} className="CR-review-avatar" />
-          <div className="CR-review-who">
-            <div className="CR-review-line1">
-              {user ? <Link href={app.route.user(user)}>{username(user)}</Link> : username(null)}
-              {review.isVerified() ? (
-                <span className="CR-badge CR-badge--ok">
-                  <i className="fas fa-circle-check" aria-hidden="true" /> {t('review.verified')}
-                </span>
-              ) : null}
-              {review.status() === 'pending' ? <span className="CR-badge CR-badge--warn">{t('review.pending')}</span> : null}
-            </div>
-            <div className="CR-review-line2">
-              {review.ownedFor() ? `${tx(`owned.${review.ownedFor()}`)} · ` : ''}
-              {humanTime(review.createdAt())} · <a href={`#review${review.id()}`}>#{review.id()}</a>
-            </div>
-          </div>
-          {this.controls()}
-        </header>
-
+        {this.head()}
         <div className="CR-review-rate">
           {scoreTile(review.rating())}
           {review.title() ? <h3>{review.title()}</h3> : stars(review.rating())}
         </div>
         {this.props()}
-        <div className="CR-crits">
-          {(review.scores() || []).map((s) => (
-            <div className="CR-crit">
-              <div className="CR-crit-head">
-                <b>{s.name}</b>
-                {stars(s.score)}
-              </div>
-              {s.comment ? <p>{s.comment}</p> : null}
-            </div>
-          ))}
-        </div>
+        {this.criteria()}
         {review.bodyHtml() ? (
           <div className="CR-general">
             <h4>{String(setting('general_label') || '') || t('review.general')}</h4>
@@ -71,23 +41,78 @@ export default class ReviewCard extends Component<ReviewCardAttrs> {
           </div>
         ) : null}
         {this.prosCons()}
-        {review.photos()?.length ? (
-          <div className="CR-photos">
-            {review.photos().map((photo, index) => (
-              <button type="button" className="CR-photo" aria-label={tx('review.open_photo')} onclick={() => openLightbox(review.photos(), index)}>
-                <img src={photo.thumbUrl} alt="" loading="lazy" />
-              </button>
-            ))}
-          </div>
-        ) : null}
-        {review.previousRating() !== null && review.editedAt() ? (
-          <div className="CR-updated">
-            <i className="fas fa-clock-rotate-left" aria-hidden="true" /> {t('review.updated', { ago: humanTime(review.editedAt()!) })}{' '}
-            <s>{review.previousRating()!.toFixed(1)}</s> → <span className={scoreClass(review.rating())}>{review.rating().toFixed(1)}</span>
-          </div>
-        ) : null}
+        {this.photos()}
+        {this.updated()}
         {this.footer()}
       </article>
+    );
+  }
+
+  private head(): Mithril.Children {
+    const { review } = this.attrs;
+    const user = review.user();
+    return (
+      <header className="CR-review-head">
+        <Avatar user={user || null} className="CR-review-avatar" />
+        <div className="CR-review-who">
+          <div className="CR-review-line1">
+            {user ? <Link href={app.route.user(user)}>{username(user)}</Link> : username(null)}
+            {review.isVerified() ? (
+              <span className="CR-badge CR-badge--ok">
+                <i className="fas fa-circle-check" aria-hidden="true" /> {t('review.verified')}
+              </span>
+            ) : null}
+            {review.status() === 'pending' ? <span className="CR-badge CR-badge--warn">{t('review.pending')}</span> : null}
+          </div>
+          <div className="CR-review-line2">
+            {review.ownedFor() ? `${tx(`owned.${review.ownedFor()}`)} · ` : ''}
+            {humanTime(review.createdAt())} · <a href={`#review${review.id()}`}>#{review.id()}</a>
+          </div>
+        </div>
+        {this.controls()}
+      </header>
+    );
+  }
+
+  private criteria(): Mithril.Children {
+    return (
+      <div className="CR-crits">
+        {(this.attrs.review.scores() || []).map((s) => (
+          <div className="CR-crit">
+            <div className="CR-crit-head">
+              <b>{s.name}</b>
+              {stars(s.score)}
+            </div>
+            {s.comment ? <p>{s.comment}</p> : null}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  private photos(): Mithril.Children {
+    const photos = this.attrs.review.photos() || [];
+    if (!photos.length) return null;
+    return (
+      <div className="CR-photos">
+        {photos.map((photo, index) => (
+          <button type="button" className="CR-photo" aria-label={tx('review.open_photo')} onclick={() => openLightbox(photos, index)}>
+            <img src={photo.thumbUrl} alt="" loading="lazy" />
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  /** MyBB doesn't keep history; we show "Updated" with the score before the edit. */
+  private updated(): Mithril.Children {
+    const { review } = this.attrs;
+    if (review.previousRating() === null || !review.editedAt()) return null;
+    return (
+      <div className="CR-updated">
+        <i className="fas fa-clock-rotate-left" aria-hidden="true" /> {t('review.updated', { ago: humanTime(review.editedAt()!) })}{' '}
+        <s>{review.previousRating()!.toFixed(1)}</s> → <span className={scoreClass(review.rating())}>{review.rating().toFixed(1)}</span>
+      </div>
     );
   }
 

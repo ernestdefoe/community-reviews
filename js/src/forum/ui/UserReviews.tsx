@@ -35,7 +35,7 @@ export default class UserReviews extends Component<Attrs> {
       app
         .request<{ data: { attributes: { reviewCount: number; rating: number | null } } }>({
           method: 'GET',
-          url: `${app.forum.attribute('apiUrl')}/review-merchants/${this.attrs.user.id()}`,
+          url: `${app.forum.attribute('apiUrl')}/reviews/merchant-summary?filter[merchant]=${this.attrs.user.id()}`,
         })
         .then((r) => (this.summary = r.data.attributes))
         .catch(failed)
@@ -45,7 +45,7 @@ export default class UserReviews extends Component<Attrs> {
   }
 
   private isMerchant(): boolean {
-    const group = Number(setting('merchant_group') || 0);
+    const group = Number(setting('merchant_group'));
     return !!group && (this.attrs.user.groups() || []).some((g) => g && Number(g.id()) === group);
   }
 

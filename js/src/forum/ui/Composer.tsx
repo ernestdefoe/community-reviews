@@ -4,6 +4,7 @@ import Button from 'flarum/common/components/Button';
 import classList from 'flarum/common/utils/classList';
 import type Mithril from 'mithril';
 import type Category from '../models/Category';
+import type { ItemField } from '../models/Category';
 import type Criterion from '../models/Criterion';
 import type Item from '../models/Item';
 import type Review from '../models/Review';
@@ -147,9 +148,28 @@ export default class Composer extends FormModal<ComposerAttrs> {
   }
 
   private itemFields(): Mithril.Children {
-    const max = Number(setting('name_max')) || 100;
-    const specs = one(this.category())?.itemFields() || [];
     return [
+      this.categoryField(),
+      this.nameField(),
+      <div className="CR-two">
+        <div className="Form-group">
+          <label for="cr-brand">{t('composer.brand')}</label>
+          <input
+            id="cr-brand"
+            className="FormControl"
+            maxlength={100}
+            value={this.brand}
+            oninput={(e: InputEvent) => (this.brand = (e.target as HTMLInputElement).value)}
+          />
+        </div>
+        {(this.category()?.itemFields() || []).map((f) => this.specField(f))}
+      </div>,
+      this.addingItem() ? <p className="helpText">{t('composer.first_review_help')}</p> : null,
+    ];
+  }
+
+  private categoryField(): Mithril.Children {
+    return (
       <div className="Form-group">
         <label for="cr-category">{t('composer.category')}</label>
         <select
@@ -162,7 +182,13 @@ export default class Composer extends FormModal<ComposerAttrs> {
             <option value={c.id()}>{c.parentId() ? `— ${c.name()}` : c.name()}</option>
           ))}
         </select>
-      </div>,
+      </div>
+    );
+  }
+
+  private nameField(): Mithril.Children {
+    const max = Number(setting('name_max'));
+    return (
       <div className="Form-group">
         <label for="cr-name">
           {t('composer.name')} <span className="CR-counter">{t('composer.counter', { count: this.name.length, max })}</span>
@@ -174,68 +200,58 @@ export default class Composer extends FormModal<ComposerAttrs> {
           value={this.name}
           oninput={(e: InputEvent) => this.typed((e.target as HTMLInputElement).value)}
         />
-        {this.addingItem() && this.similar.length ? (
-          <div className="CR-similar">
-            <div className="CR-similar-h">
-              <i className="fas fa-circle-info" aria-hidden="true" /> {t('composer.similar')}
-            </div>
-            {this.similar.map((item) => (
-              <a
-                href={app.route('community-reviews.item', { id: item.urlId() })}
-                className="CR-similar-row"
-                onclick={(e: MouseEvent) => {
-                  e.preventDefault();
-                  this.hide();
-                  m.route.set(app.route('community-reviews.item', { id: item.urlId() }));
-                }}
-              >
-                <span>{item.name()}</span>
-                {scoreTile(item.rating(), 'CR-score--sm')}
-              </a>
-            ))}
-          </div>
-        ) : null}
-      </div>,
-      <div className="CR-two">
-        <div className="Form-group">
-          <label for="cr-brand">{t('composer.brand')}</label>
-          <input
-            id="cr-brand"
-            className="FormControl"
-            maxlength={100}
-            value={this.brand}
-            oninput={(e: InputEvent) => (this.brand = (e.target as HTMLInputElement).value)}
-          />
+        {this.addingItem() && this.similar.length ? this.similarList() : null}
+      </div>
+    );
+  }
+
+  private similarList(): Mithril.Children {
+    return (
+      <div className="CR-similar">
+        <div className="CR-similar-h">
+          <i className="fas fa-circle-info" aria-hidden="true" /> {t('composer.similar')}
         </div>
-        {specs.map((f) => (
-          <div className="Form-group">
-            <label for={`cr-f-${f.key}`}>{f.label}</label>
-            {f.type === 'choice' ? (
-              <select
-                id={`cr-f-${f.key}`}
-                className="FormControl"
-                value={this.fields[f.key] || ''}
-                onchange={(e: Event) => (this.fields[f.key] = (e.target as HTMLSelectElement).value)}
-              >
-                <option value="">—</option>
-                {f.options.map((o) => (
-                  <option value={o}>{o}</option>
-                ))}
-              </select>
-            ) : (
-              <input
-                id={`cr-f-${f.key}`}
-                className="FormControl"
-                type={f.type === 'number' ? 'number' : 'text'}
-                value={this.fields[f.key] || ''}
-                oninput={(e: InputEvent) => (this.fields[f.key] = (e.target as HTMLInputElement).value)}
-              />
-            )}
-          </div>
+        {this.similar.map((item) => (
+          <a
+            href={app.route('community-reviews.item', { id: item.urlId() })}
+            className="CR-similar-row"
+            onclick={(e: MouseEvent) => {
+              e.preventDefault();
+              this.hide();
+              m.route.set(app.route('community-reviews.item', { id: item.urlId() }));
+            }}
+          >
+            <span>{item.name()}</span>
+            {scoreTile(item.rating(), 'CR-score--sm')}
+          </a>
         ))}
-      </div>,
-      this.addingItem() ? <p className="helpText">{t('composer.first_review_help')}</p> : null,
-    ];
+      </div>
+    );
+  }
+
+  private specField(f: ItemField): Mithril.Children {
+    const set = (e: Event) => (this.fields[f.key] = (e.target as HTMLInputElement | HTMLSelectElement).value);
+    return (
+      <div className="Form-group">
+        <label for={`cr-f-${f.key}`}>{f.label}</label>
+        {f.type === 'choice' ? (
+          <select id={`cr-f-${f.key}`} className="FormControl" value={this.fields[f.key] || ''} onchange={set}>
+            <option value="">—</option>
+            {f.options.map((o) => (
+              <option value={o}>{o}</option>
+            ))}
+          </select>
+        ) : (
+          <input
+            id={`cr-f-${f.key}`}
+            className="FormControl"
+            type={f.type === 'number' ? 'number' : 'text'}
+            value={this.fields[f.key] || ''}
+            oninput={set}
+          />
+        )}
+      </div>
+    );
   }
 
   /** "Already in the catalog?" while typing a new item's name (MyBB refuses duplicates on save). */
@@ -272,143 +288,148 @@ export default class Composer extends FormModal<ComposerAttrs> {
   }
 
   private reviewFields(): Mithril.Children {
-    const criteria = this.criteria();
-    const required = !!setting('criterion_comment_required');
-    const done = criteria.filter((c) => {
-      const s = this.scores[String(c.id())];
-      return s && s.score && (!required || s.comment.trim());
-    }).length;
-    const overall = this.overall();
-    const generalMax = Number(setting('general_max')) || 2000;
-    const commentMax = Number(setting('comment_max')) || 2000;
-
     return [
+      this.overallBox(),
+      this.criteriaGroup(),
+      this.input(
+        'cr-title',
+        [t('composer.title'), ' ', <span className="CR-muted">{t('composer.optional')}</span>],
+        this.reviewTitle,
+        (v) => (this.reviewTitle = v),
+        150
+      ),
+      this.bodyField(),
+      setting('ask_price_link') ? (
+        <div className="CR-two">
+          {this.input('cr-price', t('composer.price'), this.price, (v) => (this.price = v), 30)}
+          {this.input('cr-url', t('composer.url'), this.url, (v) => (this.url = v), 255, 'url')}
+        </div>
+      ) : null,
+      this.merchantAndOwned(),
+      Number(setting('max_photos')) > 0 ? <PhotoPicker photos={this.photos} onchange={(photos: ReviewPhoto[]) => (this.photos = photos)} /> : null,
+      setting('extra_pros_cons') ? (
+        <div className="CR-two">
+          {this.input('cr-pros', t('review.pros'), this.pros, (v) => (this.pros = v), 400, 'text', tx('composer.list_placeholder'))}
+          {this.input('cr-cons', t('review.cons'), this.cons, (v) => (this.cons = v), 400, 'text', tx('composer.list_placeholder'))}
+        </div>
+      ) : null,
+    ];
+  }
+
+  /** A labelled one-line field. */
+  private input(
+    id: string,
+    label: Mithril.Children,
+    value: string,
+    set: (value: string) => void,
+    max: number,
+    type = 'text',
+    placeholder = ''
+  ): Mithril.Children {
+    return (
+      <div className="Form-group">
+        <label for={id}>{label}</label>
+        <input
+          id={id}
+          className="FormControl"
+          type={type}
+          maxlength={max}
+          placeholder={placeholder}
+          value={value}
+          oninput={(e: InputEvent) => set((e.target as HTMLInputElement).value)}
+        />
+      </div>
+    );
+  }
+
+  private overallBox(): Mithril.Children {
+    const overall = this.overall();
+    return (
       <div className="CR-overall">
         {scoreTile(overall)}
         <div>
           <div className="CR-overall-word">{overall === null ? t('composer.rate_below') : t(`words.${Math.max(1, Math.round(overall))}`)}</div>
           <div className="helpText">{t('composer.overall_help')}</div>
         </div>
-      </div>,
+      </div>
+    );
+  }
+
+  private criteriaGroup(): Mithril.Children {
+    const criteria = this.criteria();
+    const required = !!setting('criterion_comment_required');
+    const done = criteria.filter((c) => {
+      const s = this.scores[String(c.id())];
+      return s && s.score && (!required || s.comment.trim());
+    }).length;
+    return (
       <div className="Form-group">
         <span className="CR-label">
           {t(required ? 'composer.criteria_required' : 'composer.criteria')}
           <span className="CR-counter">{t('composer.done', { done, total: criteria.length })}</span>
         </span>
-        {criteria.map((c) => this.criterionBox(c, required, commentMax))}
-      </div>,
-      <div className="Form-group">
-        <label for="cr-title">
-          {t('composer.title')} <span className="CR-muted">{t('composer.optional')}</span>
-        </label>
-        <input
-          id="cr-title"
-          className="FormControl"
-          maxlength={150}
-          value={this.reviewTitle}
-          oninput={(e: InputEvent) => (this.reviewTitle = (e.target as HTMLInputElement).value)}
-        />
-      </div>,
+        {criteria.map((c) => this.criterionBox(c, required, Number(setting('comment_max'))))}
+      </div>
+    );
+  }
+
+  private bodyField(): Mithril.Children {
+    const max = Number(setting('general_max'));
+    return (
       <div className="Form-group">
         <label for="cr-body">
           {String(setting('general_label') || '') || t('review.general')}{' '}
-          <span className="CR-counter">{t('composer.counter', { count: this.body.length, max: generalMax })}</span>
+          <span className="CR-counter">{t('composer.counter', { count: this.body.length, max })}</span>
         </label>
         <textarea
           id="cr-body"
           className="FormControl"
           rows={5}
-          maxlength={generalMax}
+          maxlength={max}
           value={this.body}
           oninput={(e: InputEvent) => (this.body = (e.target as HTMLTextAreaElement).value)}
         />
         <p className="helpText">{t('composer.formatting')}</p>
-      </div>,
-      setting('ask_price_link') ? (
-        <div className="CR-two">
+      </div>
+    );
+  }
+
+  private merchantAndOwned(): Mithril.Children {
+    if (!setting('merchant_group') && !setting('extra_verified')) return null;
+    return (
+      <div className="CR-two">
+        {setting('merchant_group') ? (
           <div className="Form-group">
-            <label for="cr-price">{t('composer.price')}</label>
-            <input
-              id="cr-price"
-              className="FormControl"
-              maxlength={30}
-              value={this.price}
-              oninput={(e: InputEvent) => (this.price = (e.target as HTMLInputElement).value)}
-            />
+            {this.input(
+              'cr-merchant',
+              t('composer.merchant'),
+              this.merchant,
+              (v) => (this.merchant = v),
+              100,
+              'text',
+              tx('composer.merchant_placeholder')
+            )}
+            <p className="helpText">{t('composer.merchant_help')}</p>
           </div>
+        ) : null}
+        {setting('extra_verified') ? (
           <div className="Form-group">
-            <label for="cr-url">{t('composer.url')}</label>
-            <input
-              id="cr-url"
+            <label for="cr-owned">{t('composer.owned_for')}</label>
+            <select
+              id="cr-owned"
               className="FormControl"
-              type="url"
-              inputmode="url"
-              maxlength={255}
-              value={this.url}
-              oninput={(e: InputEvent) => (this.url = (e.target as HTMLInputElement).value)}
-            />
+              value={this.ownedFor}
+              onchange={(e: Event) => (this.ownedFor = (e.target as HTMLSelectElement).value)}
+            >
+              <option value="">—</option>
+              {['month', 'half', 'year', 'years', 'more'].map((k) => (
+                <option value={k}>{t(`owned_option.${k}`)}</option>
+              ))}
+            </select>
           </div>
-        </div>
-      ) : null,
-      setting('merchant_group') || setting('extra_verified') ? (
-        <div className="CR-two">
-          {setting('merchant_group') ? (
-            <div className="Form-group">
-              <label for="cr-merchant">{t('composer.merchant')}</label>
-              <input
-                id="cr-merchant"
-                className="FormControl"
-                placeholder={tx('composer.merchant_placeholder')}
-                value={this.merchant}
-                oninput={(e: InputEvent) => (this.merchant = (e.target as HTMLInputElement).value)}
-              />
-              <p className="helpText">{t('composer.merchant_help')}</p>
-            </div>
-          ) : null}
-          {setting('extra_verified') ? (
-            <div className="Form-group">
-              <label for="cr-owned">{t('composer.owned_for')}</label>
-              <select
-                id="cr-owned"
-                className="FormControl"
-                value={this.ownedFor}
-                onchange={(e: Event) => (this.ownedFor = (e.target as HTMLSelectElement).value)}
-              >
-                <option value="">—</option>
-                {['month', 'half', 'year', 'years', 'more'].map((k) => (
-                  <option value={k}>{t(`owned_option.${k}`)}</option>
-                ))}
-              </select>
-            </div>
-          ) : null}
-        </div>
-      ) : null,
-      Number(setting('max_photos')) > 0 ? <PhotoPicker photos={this.photos} onchange={(photos: ReviewPhoto[]) => (this.photos = photos)} /> : null,
-      setting('extra_pros_cons') ? (
-        <div className="CR-two">
-          <div className="Form-group">
-            <label for="cr-pros">{t('review.pros')}</label>
-            <input
-              id="cr-pros"
-              className="FormControl"
-              placeholder={tx('composer.list_placeholder')}
-              value={this.pros}
-              oninput={(e: InputEvent) => (this.pros = (e.target as HTMLInputElement).value)}
-            />
-          </div>
-          <div className="Form-group">
-            <label for="cr-cons">{t('review.cons')}</label>
-            <input
-              id="cr-cons"
-              className="FormControl"
-              placeholder={tx('composer.list_placeholder')}
-              value={this.cons}
-              oninput={(e: InputEvent) => (this.cons = (e.target as HTMLInputElement).value)}
-            />
-          </div>
-        </div>
-      ) : null,
-    ];
+        ) : null}
+      </div>
+    );
   }
 
   private criterionBox(c: Criterion, required: boolean, max: number): Mithril.Children {

@@ -10,7 +10,7 @@ import { setting, t, tx } from '../util';
 
 /** The name, cut to the admin's card length (MyBB product_name_length_card); the full name stays in the title. */
 function shortName(name: string): string {
-  const max = Number(setting('card_name_max')) || 30;
+  const max = Number(setting('card_name_max'));
   return name.length > max ? name.slice(0, max).trimEnd() + '…' : name;
 }
 

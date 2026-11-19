@@ -36,11 +36,4 @@ class Merchants
             ? $query->whereKey((int) $nameOrId)->first()
             : $query->where('username', $nameOrId)->first();
     }
-
-    public function isMerchant(User $user): bool
-    {
-        $group = $this->config->merchantGroupId();
-
-        return $group !== null && $user->groups->contains('id', $group);
-    }
 }

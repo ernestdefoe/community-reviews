@@ -85,7 +85,7 @@ export default class ItemPage extends Page {
         filter,
         sort: direction + this.sort,
         include: 'user,merchant',
-        page: { offset, limit: Number(setting('reviews_per_page')) || 6, total: 0 },
+        page: { offset, limit: Number(setting('reviews_per_page')), total: 0 },
       })
       .then((list) => {
         this.reviews = offset ? [...this.reviews, ...list] : [...list];
@@ -265,30 +265,7 @@ export default class ItemPage extends Page {
     return (
       <div className="CR-itembody">
         <div className="CR-itembody-main">
-          <div className="CR-sectionhead CR-reviewsbar">
-            <h2>{t('item.reviews_title', { count: item.reviewCount() })}</h2>
-            <span className="CR-grow" />
-            <Menu
-              label={tx('sort.label')}
-              toggleClassName="Button"
-              toggle={[
-                <i className="Button-icon fas fa-arrow-down-wide-short" aria-hidden="true" />,
-                <span className="Button-label">{this.sortLabel()}</span>,
-              ]}
-              entries={this.sortEntries()}
-            />
-            <button
-              type="button"
-              className={classList('CR-chip', this.withPhotos && 'is-active')}
-              aria-pressed={this.withPhotos ? 'true' : 'false'}
-              onclick={() => {
-                this.withPhotos = !this.withPhotos;
-                this.loadReviews(0);
-              }}
-            >
-              <i className="fas fa-camera" aria-hidden="true" /> {t('item.with_photos')}
-            </button>
-          </div>
+          {this.reviewsBar(item)}
           {this.reviews.map((review) => (
             <ReviewCard
               key={review.id()}
@@ -314,6 +291,35 @@ export default class ItemPage extends Page {
           {this.criteriaCard(item)}
           {this.mentionsCard(item)}
         </aside>
+      </div>
+    );
+  }
+
+  private reviewsBar(item: Item): Mithril.Children {
+    return (
+      <div className="CR-sectionhead CR-reviewsbar">
+        <h2>{t('item.reviews_title', { count: item.reviewCount() })}</h2>
+        <span className="CR-grow" />
+        <Menu
+          label={tx('sort.label')}
+          toggleClassName="Button"
+          toggle={[
+            <i className="Button-icon fas fa-arrow-down-wide-short" aria-hidden="true" />,
+            <span className="Button-label">{this.sortLabel()}</span>,
+          ]}
+          entries={this.sortEntries()}
+        />
+        <button
+          type="button"
+          className={classList('CR-chip', this.withPhotos && 'is-active')}
+          aria-pressed={this.withPhotos ? 'true' : 'false'}
+          onclick={() => {
+            this.withPhotos = !this.withPhotos;
+            this.loadReviews(0);
+          }}
+        >
+          <i className="fas fa-camera" aria-hidden="true" /> {t('item.with_photos')}
+        </button>
       </div>
     );
   }

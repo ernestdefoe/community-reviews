@@ -24,6 +24,7 @@ class ItemVisibility
             if ($actor->hasPermission('communityReviews.view')) {
                 $q->where('community_review_items.status', 'approved');
             } else {
+                // Without the view permission: no approved items at all (their own may still follow below).
                 $q->whereRaw('1 = 0');
             }
             if (! $actor->isGuest()) {

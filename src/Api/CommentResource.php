@@ -30,6 +30,8 @@ use Tobyz\JsonApiServer\Pagination\Pagination;
  */
 class CommentResource extends AbstractDatabaseResource
 {
+    use Concerns\ReadsInput;
+
     /** @var array<int, bool> */
     private array $isNew = [];
 
@@ -81,7 +83,8 @@ class CommentResource extends AbstractDatabaseResource
             Schema\Boolean::make('isOfficial')->property('is_official')->writableOnCreate()->set(fn () => null),
             Schema\Str::make('bodyHtml')->get(fn (Comment $c, Context $context): string => $c->bodyHtml($context->request)),
             // "in reply to Jordan's review": the review's author name, from the eager-loaded review.
-            Schema\Str::make('replyToName')->nullable()->get(fn (Comment $c): ?string => $c->review?->user?->display_name),
+            Schema\Str::make('replyToName')->nullable()
+                ->get(fn (Comment $c): ?string => $c->review !== null && $c->review->isApproved() ? $c->review->user?->display_name : null),
             Schema\Str::make('itemPath')->nullable()->get(fn (Comment $c): ?string => $c->item ? $c->item->id.'-'.$c->item->slug : null),
             Schema\Str::make('itemName')->nullable()->get(fn (Comment $c): ?string => $c->item?->name),
             Schema\DateTime::make('createdAt')->property('created_at'),
@@ -155,20 +158,5 @@ class CommentResource extends AbstractDatabaseResource
         }
 
         return $context->withQuery($query);
-    }
-
-    /** @return array<string, mixed> */
-    private function attributes(Context $context): array
-    {
-        $attributes = $context->body()['data']['attributes'] ?? [];
-
-        return is_array($attributes) ? $attributes : [];
-    }
-
-    private function ip(Context $context): ?string
-    {
-        $ip = $context->request->getAttribute('ipAddress');
-
-        return is_string($ip) ? $ip : null;
     }
 }

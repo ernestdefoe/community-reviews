@@ -29,6 +29,8 @@ use Tobyz\JsonApiServer\Context as BaseContext;
  */
 class CategoryResource extends AbstractDatabaseResource
 {
+    use Concerns\Reorders;
+
     public function __construct(private readonly ConnectionInterface $db)
     {
     }
@@ -47,6 +49,7 @@ class CategoryResource extends AbstractDatabaseResource
     public function scope(Builder $query, BaseContext $context): void
     {
         if (! $context->getActor()->hasPermission('communityReviews.view') && ! $context->getActor()->isAdmin()) {
+            // Without the view permission the catalog's structure is hidden too (an empty list, not an error).
             $query->whereRaw('1 = 0');
         }
     }
@@ -65,7 +68,7 @@ class CategoryResource extends AbstractDatabaseResource
                 ->route('POST', '/order')
                 ->authenticated()
                 ->admin()
-                ->action(fn (Context $context) => $this->reorder(Clean::ids($context->body()['order'] ?? [])))
+                ->action(fn (Context $context) => $this->reorder(Category::query(), $this->db, Clean::ids($context->body()['order'] ?? [])))
                 ->response(fn () => new EmptyResponse(204)),
         ];
     }
@@ -109,26 +112,6 @@ class CategoryResource extends AbstractDatabaseResource
         $model->created_at = Carbon::now();
 
         return $model;
-    }
-
-    /**
-     * Every position in one UPDATE. The ids and positions are integers from Clean::ids(), so inlining them is
-     * safe; the column name goes through the grammar for table-prefix-safe quoting.
-     *
-     * @param list<int> $ids
-     */
-    private function reorder(array $ids): void
-    {
-        if ($ids === []) {
-            return;
-        }
-        $cases = '';
-        foreach ($ids as $position => $id) {
-            $cases .= ' WHEN '.(int) $id.' THEN '.(int) $position;
-        }
-        Category::query()->whereIn('id', $ids)->update([
-            'position' => $this->db->raw('CASE '.$this->db->getQueryGrammar()->wrap('id').$cases.' END'),
-        ]);
     }
 
     private function slug(string $name, ?int $id): string

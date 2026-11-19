@@ -45,7 +45,7 @@ export default class Comments extends Component<CommentsAttrs> {
     app.store
       .find<Comment[]>('review-comments', {
         filter: { item: this.attrs.item.id()! },
-        page: { offset, limit: Number(setting('comments_per_page')) || 6, total: 0 },
+        page: { offset, limit: Number(setting('comments_per_page')), total: 0 },
       })
       .then((list) => {
         this.comments = offset ? [...this.comments, ...list] : [...list];
@@ -80,7 +80,7 @@ export default class Comments extends Component<CommentsAttrs> {
   }
 
   private form(replyTo: Review | null): Mithril.Children {
-    const max = Number(setting('comment_max')) || 2000;
+    const max = Number(setting('comment_max'));
     return (
       <form
         className="CR-comment-form"
@@ -142,8 +142,7 @@ export default class Comments extends Component<CommentsAttrs> {
       });
   }
 
-  private comment(comment: Comment): Mithril.Children {
-    const user = comment.user() || null;
+  private entries(comment: Comment): MenuEntry[] {
     const entries: MenuEntry[] = [];
     if (comment.canEdit())
       entries.push({ icon: 'fas fa-pen', label: t('comments.edit'), run: () => ((this.editing = comment), (this.editDraft = comment.body() || '')) });
@@ -160,13 +159,17 @@ export default class Comments extends Component<CommentsAttrs> {
         },
       });
     }
-    if (comment.canReport() && app.session.user?.id() !== user?.id()) {
+    if (comment.canReport() && app.session.user?.id() !== (comment.user() || null)?.id()) {
       entries.push({ icon: 'far fa-flag', label: t('report.action'), run: () => openReport('comment', Number(comment.id())) });
     }
+    return entries;
+  }
 
+  private comment(comment: Comment): Mithril.Children {
+    const user = comment.user() || null;
     return (
       <div className={classList('CR-comment', comment.isOfficial() && 'CR-comment--official')} id={`comment${comment.id()}`} key={comment.id()}>
-        <Avatar user={user || null} className="CR-comment-avatar" />
+        <Avatar user={user} className="CR-comment-avatar" />
         <div className="CR-comment-main">
           <div className="CR-comment-head">
             {user ? <Link href={app.route.user(user)}>{username(user)}</Link> : username(null)}
@@ -177,17 +180,17 @@ export default class Comments extends Component<CommentsAttrs> {
             ) : null}
             <span className="CR-muted">
               · {humanTime(comment.createdAt())}
-              {comment.reviewId() ? (
-                <>
-                  {' · '}
-                  <a href={`#review${comment.reviewId()}`}>
-                    {t('comments.in_reply_to', { name: comment.replyToName() || '', id: comment.reviewId() })}
-                  </a>
-                </>
-              ) : null}
+              {comment.reviewId()
+                ? [
+                    ' · ',
+                    <a href={`#review${comment.reviewId()}`}>
+                      {t('comments.in_reply_to', { name: comment.replyToName() || '', id: comment.reviewId() })}
+                    </a>,
+                  ]
+                : null}
             </span>
             <span className="CR-grow" />
-            <Menu entries={entries} label={tx('comments.controls')} />
+            <Menu entries={this.entries(comment)} label={tx('comments.controls')} />
           </div>
           {this.editing === comment ? this.editor(comment) : <div className="CR-comment-body">{m.trust(comment.bodyHtml())}</div>}
         </div>

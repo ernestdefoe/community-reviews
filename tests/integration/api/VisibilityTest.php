@@ -48,12 +48,12 @@ class VisibilityTest extends ReviewsTestCase
     public function the_merchant_average_counts_only_visible_reviews(): void
     {
         $id = $this->itemId(2, ['review' => $this->review(['merchant' => 'merchant'])]);
-        $summary = $this->json($this->get('/api/review-merchants/5'))['data']['attributes'];
+        $summary = $this->json($this->get('/api/reviews/merchant-summary', null, ['filter' => ['merchant' => 5]]))['data']['attributes'];
         $this->assertSame(1, $summary['reviewCount']);
         $this->assertEqualsWithDelta(4.5, $summary['rating'], 0.001);
 
         $this->database()->table('community_reviews')->update(['status' => 'pending']);
-        $this->assertSame(0, $this->json($this->get('/api/review-merchants/5'))['data']['attributes']['reviewCount']);
+        $this->assertSame(0, $this->json($this->get('/api/reviews/merchant-summary', null, ['filter' => ['merchant' => 5]]))['data']['attributes']['reviewCount']);
         $this->assertSame(1, $this->json($this->get('/api/reviews', 5, ['filter' => ['merchant' => 5]]))['data'] === [] ? 1 : 0);
         unset($id);
     }
@@ -63,5 +63,14 @@ class VisibilityTest extends ReviewsTestCase
     {
         $this->assertSame(422, $this->addItem(2, ['review' => $this->review(['merchant' => 'other'])])->getStatusCode());
         $this->assertSame(201, $this->addItem(2, ['review' => $this->review(['merchant' => 'merchant'])])->getStatusCode());
+    }
+
+    #[Test]
+    public function catalog_statistics_count_only_approved_items(): void
+    {
+        $this->itemId(2);
+        $stats = $this->json($this->get('/api/review-items/stats'))['data']['attributes'];
+        $this->assertSame(['items' => 1, 'reviews' => 1, 'comments' => 0, 'views' => 0], $stats);
+        $this->assertSame(200, $this->get('/api/review-items/1')->getStatusCode());
     }
 }

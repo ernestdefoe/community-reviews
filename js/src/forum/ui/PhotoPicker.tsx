@@ -26,7 +26,7 @@ export default class PhotoPicker extends Component<Attrs> {
 
   view() {
     const { photos } = this.attrs;
-    const max = Number(setting('max_photos')) || 0;
+    const max = Number(setting('max_photos'));
     return (
       <div className="Form-group">
         <span className="CR-label">
@@ -35,30 +35,7 @@ export default class PhotoPicker extends Component<Attrs> {
           <span className="CR-counter">{t('composer.photo_count', { count: photos.length, max })}</span>
         </span>
         <div className="CR-drop">
-          {photos.map((photo, index) => (
-            <span className={classList('CR-pick', index === 0 && 'is-thumb')} key={photo.id}>
-              <img src={photo.thumbUrl} alt="" />
-              {index === 0 ? (
-                <span className="CR-pick-tag">
-                  <i className="fas fa-star" aria-hidden="true" /> {t('composer.thumbnail')}
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  className="CR-pick-tag CR-pick-tag--ghost"
-                  onclick={() => this.attrs.onchange([photo, ...photos.filter((p) => p !== photo)])}
-                >
-                  {t('composer.set_thumbnail')}
-                </button>
-              )}
-              <Button
-                className="Button Button--icon CR-pick-remove"
-                icon="fas fa-xmark"
-                aria-label={tx('composer.remove_photo')}
-                onclick={() => this.attrs.onchange(photos.filter((p) => p !== photo))}
-              />
-            </span>
-          ))}
+          {photos.map((photo, index) => this.tile(photo, index))}
           {photos.length + this.uploading < max ? (
             <label className="CR-addphoto">
               <i className={this.uploading ? 'fas fa-spinner fa-spin' : 'fas fa-cloud-arrow-up'} aria-hidden="true" /> {t('composer.add_photos')}
@@ -76,8 +53,37 @@ export default class PhotoPicker extends Component<Attrs> {
     );
   }
 
+  /** One picked photo: the first is the thumbnail (MyBB "Review thumbnail"); any other can be made first. */
+  private tile(photo: ReviewPhoto, index: number): Mithril.Children {
+    const { photos } = this.attrs;
+    return (
+      <span className={classList('CR-pick', index === 0 && 'is-thumb')} key={photo.id}>
+        <img src={photo.thumbUrl} alt="" />
+        {index === 0 ? (
+          <span className="CR-pick-tag">
+            <i className="fas fa-star" aria-hidden="true" /> {t('composer.thumbnail')}
+          </span>
+        ) : (
+          <button
+            type="button"
+            className="CR-pick-tag CR-pick-tag--ghost"
+            onclick={() => this.attrs.onchange([photo, ...photos.filter((p) => p !== photo)])}
+          >
+            {t('composer.set_thumbnail')}
+          </button>
+        )}
+        <Button
+          className="Button Button--icon CR-pick-remove"
+          icon="fas fa-xmark"
+          aria-label={tx('composer.remove_photo')}
+          onclick={() => this.attrs.onchange(photos.filter((p) => p !== photo))}
+        />
+      </span>
+    );
+  }
+
   private pick(input: HTMLInputElement): void {
-    const max = Number(setting('max_photos')) || 0;
+    const max = Number(setting('max_photos'));
     const files = Array.from(input.files || []).slice(0, Math.max(0, max - this.attrs.photos.length - this.uploading));
     input.value = '';
     files.forEach((file) => {
@@ -100,6 +106,8 @@ export default class PhotoPicker extends Component<Attrs> {
     const toPhoto = (r: Uploaded): ReviewPhoto => ({ id: Number(r.data.id), ...r.data.attributes });
 
     if (clientId) {
+      // Straight to imgur, like MyBB: a plain fetch on purpose. app.request would add this forum's CSRF token
+      // and session headers to a request for another site. Only the resulting i.imgur.com link comes back here.
       const form = new FormData();
       form.append('image', file);
       return fetch('https://api.imgur.com/3/image', { method: 'POST', headers: { Authorization: `Client-ID ${clientId}` }, body: form })

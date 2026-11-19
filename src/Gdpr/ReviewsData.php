@@ -79,7 +79,8 @@ class ReviewsData extends Type
             ->merge(Comment::query()->where('user_id', $this->user->id)->distinct()->pluck('item_id'))->unique();
         Review::query()->where('user_id', $this->user->id)->delete();
         Comment::query()->where('user_id', $this->user->id)->delete();
-        // The items' numbers are recounted (erasure already runs in the queue, so straight away).
+        // The items' numbers are recounted (erasure already runs in the queue, so straight away). resolve() because
+        // flarum/gdpr builds each Type itself with a fixed constructor: there is no injection point.
         $aggregates = resolve(Aggregates::class);
         foreach ($items as $itemId) {
             $aggregates->refreshItem((int) $itemId);

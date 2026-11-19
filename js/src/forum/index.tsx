@@ -21,98 +21,102 @@ export { default as Review } from './models/Review';
  * lazy chunk (./ui), fetched the first time someone opens Reviews.
  */
 
+function routeName(): string {
+  return (app.current.get('routeName') as string | undefined) || '';
+}
+
 /** Whether the current page is one of ours (the sidebar then lists the categories). */
 function onReviewsPage(): boolean {
-  const name = app.current.get('routeName') as string | undefined;
-  return !!name && name.startsWith('community-reviews.');
+  return routeName().startsWith('community-reviews.');
+}
+
+/** On review pages the sidebar's main button adds a product, the way IndexPage's starts a discussion. */
+function addProductButton(items: ItemList<Mithril.Children>): void {
+  if (!onReviewsPage() || !items.has('newDiscussion')) return;
+  items.remove('newDiscussion');
+  if (!app.forum.attribute('communityReviewsCanAddItems')) return;
+  items.add(
+    'communityReviewsAdd',
+    <Button
+      className="Button Button--primary IndexPage-newDiscussion"
+      icon="fas fa-plus"
+      onclick={() => ui().then((chunk) => chunk.openAddItem(null))}
+    >
+      {t('page.add_item')}
+    </Button>,
+    100
+  );
+}
+
+function reviewsLink(items: ItemList<Mithril.Children>): void {
+  const name = routeName();
+  items.add(
+    'communityReviews',
+    <LinkButton
+      href={app.route('community-reviews.index')}
+      icon="fas fa-star-half-stroke"
+      active={onReviewsPage() && !name.startsWith('community-reviews.category') && name !== 'community-reviews.reports'}
+    >
+      {t('nav.reviews')}
+    </LinkButton>,
+    75
+  );
+}
+
+/** The moderators' reports link. Its count is drawn by CSS from an attribute: SelectDropdown repeats the active label. */
+function reportsLink(items: ItemList<Mithril.Children>): void {
+  if (!app.forum.attribute('communityReviewsCanModerate')) return;
+  const open = Number(app.forum.attribute('communityReviewsOpenReports') || 0);
+  items.add(
+    'communityReviewsReports',
+    <LinkButton
+      href={app.route('community-reviews.reports')}
+      icon="fas fa-flag"
+      className="CommunityReviewsNav-reports"
+      data-count={open ? (open > 99 ? '99+' : String(open)) : undefined}
+    >
+      {t('nav.reports')}
+    </LinkButton>,
+    74
+  );
+}
+
+/** On review pages: the categories, children indented under their parent (MyBB's category listing). */
+function categoryLinks(items: ItemList<Mithril.Children>): void {
+  if (!onReviewsPage()) return;
+  const categories = app.store.all<Category>('review-categories').sort((a, b) => a.position() - b.position());
+  if (!categories.length) return;
+  items.add('communityReviewsSeparator', <Separator />, 60);
+  categories
+    .filter((c) => !c.parentId())
+    .forEach((category, index) => {
+      const link = (c: Category, child: boolean) => (
+        <LinkButton
+          href={app.route('community-reviews.category', { slug: c.slug() })}
+          icon={child ? undefined : c.icon() || 'fas fa-folder'}
+          className={child ? 'CommunityReviewsNav-child' : 'CommunityReviewsNav-category'}
+        >
+          {c.name()}
+        </LinkButton>
+      );
+      items.add(`communityReviewsCategory${category.id()}`, link(category, false), 50 - index * 2);
+      categories
+        .filter((c) => c.parentId() === Number(category.id()))
+        .forEach((child, i) => items.add(`communityReviewsCategory${child.id()}`, link(child, true), 49 - index * 2 - i * 0.01));
+    });
 }
 
 app.initializers.add('ernestdefoe-community-reviews', () => {
-  // On review pages the sidebar's main button adds a product, the way IndexPage's starts a discussion.
-  extend('flarum/forum/components/IndexSidebar', 'items', function (items: ItemList<Mithril.Children>) {
-    if (!onReviewsPage() || !items.has('newDiscussion')) return;
-    items.remove('newDiscussion');
-    if (!app.forum.attribute('communityReviewsCanAddItems')) return;
-    items.add(
-      'communityReviewsAdd',
-      <Button
-        className="Button Button--primary IndexPage-newDiscussion"
-        icon="fas fa-plus"
-        onclick={() => ui().then((chunk) => chunk.openAddItem(null))}
-      >
-        {t('page.add_item')}
-      </Button>,
-      100
-    );
-  });
+  extend('flarum/forum/components/IndexSidebar', 'items', addProductButton);
 
   extend('flarum/forum/components/IndexSidebar', 'navItems', function (items: ItemList<Mithril.Children>) {
     if (!app.forum.attribute('communityReviewsCanView')) return;
-    items.add(
-      'communityReviews',
-      <LinkButton
-        href={app.route('community-reviews.index')}
-        icon="fas fa-star-half-stroke"
-        active={
-          onReviewsPage() &&
-          !(app.current.get('routeName') as string).startsWith('community-reviews.category') &&
-          app.current.get('routeName') !== 'community-reviews.reports'
-        }
-      >
-        {t('nav.reviews')}
-      </LinkButton>,
-      75
-    );
-
-    if (app.forum.attribute('communityReviewsCanModerate')) {
-      const open = Number(app.forum.attribute('communityReviewsOpenReports') || 0);
-      // The count is drawn by CSS from an attribute: SelectDropdown repeats the active item's label,
-      // and one vnode in two places throws when it changes.
-      items.add(
-        'communityReviewsReports',
-        <LinkButton
-          href={app.route('community-reviews.reports')}
-          icon="fas fa-flag"
-          className="CommunityReviewsNav-reports"
-          data-count={open ? (open > 99 ? '99+' : String(open)) : undefined}
-        >
-          {t('nav.reports')}
-        </LinkButton>,
-        74
-      );
-    }
-
-    if (!onReviewsPage()) return;
-    const categories = app.store.all<Category>('review-categories').sort((a, b) => a.position() - b.position());
-    if (!categories.length) return;
-    items.add('communityReviewsSeparator', <Separator />, 60);
-    const parents = categories.filter((c) => !c.parentId());
-    parents.forEach((category, index) => {
-      const children = categories.filter((c) => c.parentId() === Number(category.id()));
-      items.add(
-        `communityReviewsCategory${category.id()}`,
-        <LinkButton
-          href={app.route('community-reviews.category', { slug: category.slug() })}
-          icon={category.icon() || 'fas fa-folder'}
-          className="CommunityReviewsNav-category"
-        >
-          {category.name()}
-        </LinkButton>,
-        50 - index * 2
-      );
-      children.forEach((child, i) =>
-        items.add(
-          `communityReviewsCategory${child.id()}`,
-          <LinkButton href={app.route('community-reviews.category', { slug: child.slug() })} className="CommunityReviewsNav-child">
-            {child.name()}
-          </LinkButton>,
-          49 - index * 2 - i * 0.01
-        )
-      );
-    });
+    reviewsLink(items);
+    reportsLink(items);
+    categoryLinks(items);
   });
 
-  // MyBB's index widget ({$community_reviews_widget} at index_end): the latest reviews under the discussion list, when the admin turns it on.
+  // MyBB's index widget ({$community_reviews_widget} at index_end): the latest reviews under the discussion list.
   extend('flarum/forum/components/IndexPage', 'contentItems', function (items: ItemList<Mithril.Children>) {
     if (setting('index_widget') && app.forum.attribute('communityReviewsCanView')) items.add('communityReviews', <LatestReviews />, -100);
   });
