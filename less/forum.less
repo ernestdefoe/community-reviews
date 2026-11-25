@@ -21,8 +21,12 @@
 .CR-more { margin: 12px 0 20px; }
 
 // Stars and the score tile
-.CR-stars { color: @cr-star; letter-spacing: 1px; white-space: nowrap; }
-.CR-stars-off { color: var(--muted-more-color); }
+.CR-stars { letter-spacing: 1px; white-space: nowrap; }
+.CR-star { color: var(--muted-more-color);
+  &.is-full { color: @cr-star; }
+  // A half star: the left half in the star colour, the right half muted, on the same glyph.
+  &.is-half { color: transparent; background: linear-gradient(90deg, @cr-star 50%, var(--muted-more-color) 50%);
+    -webkit-background-clip: text; background-clip: text; } }
 .CR-score {
   display: inline-grid; place-items: center; min-width: 38px; height: 30px; padding: 0 8px; border-radius: 7px;
   font-weight: 800; font-size: 14.5px; color: var(--body-bg); background: var(--primary-color); flex: none;

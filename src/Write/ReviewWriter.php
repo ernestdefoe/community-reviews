@@ -236,11 +236,18 @@ class ReviewWriter
         // "merchantName", not "merchant": that name belongs to the review's merchant relationship.
         if (array_key_exists('merchantName', $input)) {
             $name = Clean::text($input['merchantName']);
-            $merchant = $name === null ? null : $this->merchants->find($name);
-            if ($name !== null && $merchant === null) {
-                $this->fail->on('merchantName', 'merchant_invalid');
+            // Keeping the merchant a review already names is always allowed: they may have left the Merchants
+            // group since, and the author must still be able to edit the rest of the review.
+            $current = $review->merchant_id === null ? null : $review->merchant;
+            $kept = $name !== null && $current !== null && ($name === $current->username || $name === (string) $current->id);
+            if (! $kept) {
+                $merchant = $name === null ? null : $this->merchants->find($name);
+                if ($name !== null && $merchant === null) {
+                    $this->fail->on('merchantName', 'merchant_invalid');
+                }
+                $review->merchant_id = $merchant?->id;
+                $review->setRelation('merchant', $merchant);
             }
-            $review->merchant_id = $merchant?->id;
         }
 
         if ($this->config->extra('verified') && array_key_exists('ownedFor', $input)) {

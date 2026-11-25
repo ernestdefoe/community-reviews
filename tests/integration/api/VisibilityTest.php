@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ErnestDefoe\CommunityReviews\Tests\integration\api;
 
 use ErnestDefoe\CommunityReviews\Tests\integration\ReviewsTestCase;
+use ErnestDefoe\CommunityReviews\Model\Review;
 use Flarum\Group\Group;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -90,5 +91,33 @@ class VisibilityTest extends ReviewsTestCase
         ]]]));
         $this->assertSame(200, $patch->getStatusCode(), (string) $patch->getBody());
         $this->assertNull($this->database()->table('community_reviews')->where('id', $id)->value('merchant_id'));
+    }
+
+    #[Test]
+    public function a_former_merchant_keeps_the_reviews_that_name_them(): void
+    {
+        $item = $this->itemId(2, ['review' => $this->review(['merchantName' => 'merchant'])]);
+        $review = $this->json($this->get('/api/reviews', null, ['filter' => ['merchant' => 5]]))['data'][0]['id'];
+        // A held review that names them stays out of everyone else's list and average.
+        $held = $this->json($this->postReview(3, $item, $this->review(['merchantName' => 'merchant'])))['data']['id'];
+        $this->database()->table('community_reviews')->where('id', $held)->update(['status' => Review::PENDING]);
+
+        // They stop being a paid merchant: out of the Merchants group.
+        $this->database()->table('group_user')->where('user_id', 5)->where('group_id', 10)->delete();
+
+        $listed = $this->json($this->get('/api/reviews', null, ['filter' => ['merchant' => 5]]))['data'];
+        $this->assertSame([$review], array_column($listed, 'id'));
+        $summary = $this->json($this->get('/api/reviews/merchant-summary', null, ['filter' => ['merchant' => 5]]))['data']['attributes'];
+        $this->assertSame(1, $summary['reviewCount']);
+        $this->assertNotNull($summary['rating']);
+
+        // The author can still edit the review without losing or having to drop its merchant...
+        $patch = $this->send($this->request('PATCH', "/api/reviews/$review", ['authenticatedAs' => 2, 'json' => ['data' => [
+            'type' => 'reviews', 'id' => $review, 'attributes' => ['merchantName' => 'merchant', 'price' => '$12'],
+        ]]]));
+        $this->assertSame(200, $patch->getStatusCode(), (string) $patch->getBody());
+        $this->assertSame(5, (int) $this->database()->table('community_reviews')->where('id', $review)->value('merchant_id'));
+        // ...but a new review can't tag someone who is no longer a merchant.
+        $this->assertSame(422, $this->postReview(3, $item, $this->review(['merchantName' => 'merchant']))->getStatusCode());
     }
 }

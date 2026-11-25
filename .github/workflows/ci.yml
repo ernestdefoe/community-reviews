@@ -59,6 +59,10 @@ jobs:
         working-directory: js
         run: npm run check-typings
 
+      - name: Unit tests
+        working-directory: js
+        run: npm test
+
       - name: Build
         working-directory: js
         run: npm run build

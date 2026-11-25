@@ -2,19 +2,27 @@ import app from 'flarum/forum/app';
 import classList from 'flarum/common/utils/classList';
 import type Mithril from 'mithril';
 import type Item from '../models/Item';
+import { starFill } from './starFill';
 
 /** A has-one relationship as the model or null (Flarum returns false when it isn't loaded). */
 export function one<T>(value: T | false | undefined | null): T | null {
   return value || null;
 }
 
-/** 1-5 stars, the off ones drawn muted. `value` may be fractional; it is rounded to the nearest star. */
+/**
+ * 1-5 stars, the off ones drawn muted and a half star split down the middle. The one star row used everywhere
+ * (cards, Top rated, the item header, each review and each criterion), so they always agree with the score.
+ */
 export function stars(value: number | null | undefined, className = ''): Mithril.Children {
-  const n = Math.max(0, Math.min(5, Math.round(value || 0)));
+  const fills = starFill(value);
+  const label = (Math.round((Number(value) || 0) * 2) / 2).toString();
   return (
-    <span className={classList('CR-stars', className)} aria-label={`${n} / 5`} role="img">
-      {'★'.repeat(n)}
-      <span className="CR-stars-off">{'★'.repeat(5 - n)}</span>
+    <span className={classList('CR-stars', className)} aria-label={`${label} / 5`} role="img">
+      {fills.map((fill) => (
+        <span className={`CR-star is-${fill}`} aria-hidden="true">
+          ★
+        </span>
+      ))}
     </span>
   );
 }
